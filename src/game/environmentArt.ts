@@ -1,0 +1,111 @@
+// ============================================================================
+// HIGH-RESOLUTION ENVIRONMENT ART REGISTRY (Client-Only Asset Loader)
+// Strictly decoupled from Node-tested simulation modules (rules.ts / rules.test.ts).
+// Loads all 8 approved Stardew-Valley-grade pixel-art environment backdrops
+// across Stage 1, Stage 2, Stage 3, and all travel/intro cutscenes.
+// ============================================================================
+
+import caminhoNovoHotdogUrl from '../assets/images/caminho_novo_hotdog_corner_1795121344413.jpg';
+import caminhoNovoStreetUrl from '../assets/images/caminho_novo_street_preview_1795119722792.jpg';
+import caminhoNovoTravelUrl from '../assets/images/caminho_novo_travel_scene_1795121343702.jpg';
+import casaNovaMudancaUrl from '../assets/images/casa_nova_mudanca_1795121209086.jpg';
+import discotecaExteriorUrl from '../assets/images/cruzeiro_fachada_fiel_1795173412317.jpg';
+import discotecaInteriorUrl from '../assets/images/discoteca_interior_cruzeiro_1795121345840.jpg';
+import locadoraVhsInteriorUrl from '../assets/images/locadora_vhs_interior_1795121202564.jpg';
+import s4BackyardLotUrl from '../assets/images/s4_backyard_lot_1795202453407.jpg';
+import s4CristianCribRoomUrl from '../assets/images/s4_cristian_crib_room_1795209665067.jpg';
+import s4MaternidadeCarmelaDutraUrl from '../assets/images/s4_maternidade_carmela_dutra_1795209662165.jpg';
+import s4MeiaAguaInteriorUrl from '../assets/images/s4_meia_agua_interior_1795202449437.jpg';
+import s4MomsHouseYardUrl from '../assets/images/s4_moms_house_yard_1795202453174.jpg';
+import s4NeighborhoodBikeRoadUrl from '../assets/images/s4_neighborhood_bike_road_1795202449685.jpg';
+import salaEstarNoiteFilmeUrl from '../assets/images/sala_estar_noite_filme_1795121344494.jpg';
+import type { Stage3MapId, Stage4MapId } from './types';
+
+const STAGE3_BACKDROP_URLS: Record<Stage3MapId, string> = {
+  neighborhood_street: caminhoNovoStreetUrl,
+  hotdog_stand: caminhoNovoHotdogUrl,
+  video_store: locadoraVhsInteriorUrl,
+  living_room: salaEstarNoiteFilmeUrl,
+  moving_house: casaNovaMudancaUrl,
+};
+
+const STAGE4_BACKDROP_URLS: Record<Stage4MapId, string> = {
+  moms_house_yard: s4MomsHouseYardUrl,
+  neighborhood_bike_road: s4NeighborhoodBikeRoadUrl,
+  maternidade_carmela_dutra: s4MaternidadeCarmelaDutraUrl,
+  cristian_crib_room: s4CristianCribRoomUrl,
+  backyard_construction: s4BackyardLotUrl,
+  meia_agua_interior: s4MeiaAguaInteriorUrl,
+};
+
+const ALL_ENVIRONMENT_URLS: string[] = [
+  discotecaExteriorUrl,
+  discotecaInteriorUrl,
+  caminhoNovoStreetUrl,
+  caminhoNovoHotdogUrl,
+  locadoraVhsInteriorUrl,
+  salaEstarNoiteFilmeUrl,
+  casaNovaMudancaUrl,
+  caminhoNovoTravelUrl,
+  s4MomsHouseYardUrl,
+  s4NeighborhoodBikeRoadUrl,
+  s4MaternidadeCarmelaDutraUrl,
+  s4CristianCribRoomUrl,
+  s4BackyardLotUrl,
+  s4MeiaAguaInteriorUrl,
+];
+
+const loadedImages = new Map<string, HTMLImageElement>();
+const pendingLoads = new Set<string>();
+
+function getOrLoadImage(url: string): HTMLImageElement | null {
+  if (typeof window === 'undefined') return null;
+  const cached = loadedImages.get(url);
+  if (cached) return cached;
+
+  if (!pendingLoads.has(url)) {
+    pendingLoads.add(url);
+    const img = new Image();
+    img.decoding = 'async';
+    img.onload = () => {
+      loadedImages.set(url, img);
+      pendingLoads.delete(url);
+    };
+    img.onerror = () => {
+      pendingLoads.delete(url);
+    };
+    img.src = url;
+  }
+  return null;
+}
+
+export function getDiscotecaExteriorBackdrop(): HTMLImageElement | null {
+  return getOrLoadImage(discotecaExteriorUrl);
+}
+
+export function getDiscotecaInteriorBackdrop(): HTMLImageElement | null {
+  return getOrLoadImage(discotecaInteriorUrl);
+}
+
+export function getCaminhoNovoStreetBackdrop(): HTMLImageElement | null {
+  return getOrLoadImage(caminhoNovoStreetUrl);
+}
+
+export function getStage3MapBackdrop(mapId: Stage3MapId): HTMLImageElement | null {
+  return getOrLoadImage(STAGE3_BACKDROP_URLS[mapId]);
+}
+
+export function getStage4MapBackdrop(mapId: Stage4MapId): HTMLImageElement | null {
+  return getOrLoadImage(STAGE4_BACKDROP_URLS[mapId]);
+}
+
+export function getCaminhoNovoTravelBackdrop(): HTMLImageElement | null {
+  return getOrLoadImage(caminhoNovoTravelUrl);
+}
+
+export function preloadEnvironmentArt(): void {
+  if (typeof window === 'undefined') return;
+  for (const url of ALL_ENVIRONMENT_URLS) {
+    getOrLoadImage(url);
+  }
+}

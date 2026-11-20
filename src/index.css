@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-pixel: "Press Start 2P", monospace;
+    --font-display: "Silkscreen", monospace;
+    --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", monospace;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: var(--font-body);
+    background-color: #1c120d;
+    color: #3b2113;
+    touch-action: manipulation;
+  }
+}
+
+.font-pixel {
+  font-family: var(--font-pixel);
+}
+
+.font-display-pixel {
+  font-family: var(--font-display);
+}
+
+.font-mono-tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Stardew-inspired carved oak & warm parchment RPG frame */
+.rpg-wood-panel {
+  background-color: #f6e4bc;
+  color: #3d2111;
+  border: 4px solid #6b3b1e;
+  box-shadow:
+    inset 0 0 0 3px #d9a76a,
+    inset 0 0 0 5px #8e522b,
+    0 6px 0 rgba(28, 14, 7, 0.72);
+}
+
+/* Warm thought-bubble parchment variant */
+.rpg-thought-panel {
+  background-color: #fdf4dc;
+  color: #3d2111;
+  border: 4px solid #8a4b26;
+  box-shadow:
+    inset 0 0 0 3px #f0ca7d,
+    inset 0 0 0 5px #b9773f,
+    0 6px 0 rgba(28, 14, 7, 0.72);
+}
+
+/* Dark carved mahogany header/HUD badge */
+.rpg-mahogany-panel {
+  background-color: #4b2816;
+  color: #faeccd;
+  border: 3px solid #d49b56;
+  box-shadow:
+    inset 0 0 0 2px #7c4726,
+    0 4px 0 rgba(20, 10, 5, 0.75);
+}
+
+.rpg-btn-gold {
+  background-color: #f0b23a;
+  color: #321909;
+  border: 3px solid #6a3818;
+  box-shadow:
+    inset 0 2px 0 #ffe08a,
+    0 4px 0 #4d2610;
+}
+
+.rpg-btn-gold:hover {
+  background-color: #f7c24f;
+}
+
+.rpg-btn-gold:active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 2px 0 #ffe08a,
+    0 2px 0 #4d2610;
+}
+
+.rpg-btn-wood {
+  background-color: #8b4e27;
+  color: #fdf2d8;
+  border: 3px solid #3f1f0e;
+  box-shadow:
+    inset 0 2px 0 #b87342,
+    0 4px 0 #2b1307;
+}
+
+.rpg-btn-wood:hover {
+  background-color: #9e5a2f;
+}
+
+.rpg-btn-rose {
+  background-color: #d64e6c;
+  color: #fff6f7;
+  border: 3px solid #5e1a2a;
+  box-shadow:
+    inset 0 2px 0 #f78ca3,
+    0 4px 0 #45101d;
+}
+
+.rpg-btn-rose:hover {
+  background-color: #e35d7b;
+}
+
+@keyframes subtleFloat {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.animate-float-gentle {
+  animation: subtleFloat 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-gentle {
+    animation: none;
+  }
+}
