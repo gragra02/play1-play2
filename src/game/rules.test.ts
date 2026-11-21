@@ -40,6 +40,8 @@ import {
   STAGE4_BUILD_SITE_POS,
   STAGE4_CONSOLE_POS,
   STAGE4_RADIO_POS,
+  STAGE4_SCHOOL_BIKE_START_X,
+  STAGE4_SCHOOL_BIKE_STOP_X,
   STAGE4_STREET_CONTINUE_POS,
   STAGE_4_CLOSING_QUOTE,
   STAGE_4_DIALOGUES,
@@ -106,6 +108,27 @@ test('player movement slides along walls and stops at solid tiles', () => {
     sim = movePlayer(sim, 0, -1, 0.1);
   }
   assert.ok(sim.player.y >= TILE_SIZE);
+});
+
+test('player movement accelerates smoothly and decelerates after releasing movement keys', () => {
+  let sim = createInitialSimulation(true);
+  const startX = sim.player.x;
+
+  sim = movePlayer(sim, 1, 0, 0.016);
+  const firstMove = sim.player.x - startX;
+  assert.ok(firstMove >= 0);
+  assert.ok((sim.player.vx ?? 0) > 0);
+  assert.ok((sim.player.vx ?? 0) < 118);
+
+  sim = movePlayer(sim, 1, 0, 0.1);
+  sim = movePlayer(sim, 1, 0, 0.1);
+  assert.ok((sim.player.vx ?? 0) > 50);
+
+  const releasedVx = sim.player.vx ?? 0;
+  const releasedStartX = sim.player.x;
+  sim = movePlayer(sim, 0, 0, 0.016);
+  assert.ok((sim.player.vx ?? 0) < releasedVx);
+  assert.ok(sim.player.vx === 0 ? sim.player.x === releasedStartX : sim.player.x > releasedStartX);
 });
 
 test('talking to Laura uses mana, reveals Grazi thought, and makes Ariel walk toward Grazi', () => {
@@ -269,6 +292,15 @@ test('Stage 2 full story arc: Eloisa reunion -> jealousy slow dance -> retry -> 
 
   assert.equal(sim.questPhase, 's2_cutscene_eloisa');
   assert.equal(sim.stage2?.cutscene, 'eloisa_reunion');
+
+  const arielBeforeEntry = sim.npcs.find((npc) => npc.role === 'ariel')!;
+  const eloisaBeforeEntry = sim.npcs.find((npc) => npc.role === 'eloisa')!;
+  assert.ok(Math.abs(eloisaBeforeEntry.x - arielBeforeEntry.x - 26) < 1e-9);
+  sim = stepSimulationTimers(sim, 0.8);
+  const arielDuringEntry = sim.npcs.find((npc) => npc.role === 'ariel')!;
+  const eloisaDuringEntry = sim.npcs.find((npc) => npc.role === 'eloisa')!;
+  assert.ok(arielDuringEntry.x < arielBeforeEntry.x);
+  assert.ok(Math.abs(eloisaDuringEntry.x - arielDuringEntry.x - 26) < 1e-9);
 
   // Step through Eloisa reunion cutscene -> Exploration 2 (jealousy) + automatic Grazi & Laura dialogue
   for (let i = 0; i < 90; i++) {
@@ -777,70 +809,73 @@ test('Stage 3 narrative respects constraints: zero ice cream, exact closing quot
 // ============================================================================
 // STAGE 4: NOSSA PEQUENA GRANDE AVENTURA — FULL 8-BEAT & GROWTH UNIT TESTS
 // ============================================================================
-test('Stage 4 full chronological progression: pregnancy (19y) -> bicycle ride -> animated bar man ("Vai um menino lindo!") -> Nani maternity trip to Carmela Dutra -> calm birth -> yellow crib & Tio Léo toys -> AFTER birth 4-stage meia-água -> toddler dance -> interactive videogame puzzles (5y) -> family ending (7y)', () => {
+test('Stage 4 begins with the school bicycle pickup and pregnancy reveal before the existing story continues', () => {
   const seenCristianAges: string[] = [];
 
   let sim = createStage4Simulation(false, []);
   assert.equal(sim.stageId, 'stage-4');
-  assert.equal(sim.questPhase, 's4_intro_pregnancy');
-  assert.equal(sim.stage4?.cutscene, 'pregnancy_news');
-  assert.equal(sim.stage4?.graziPregnant, true);
+  assert.equal(sim.questPhase, 's4_cutscene_bicycle');
+  assert.equal(sim.stage4?.cutscene, 'bicycle_ride');
+  assert.equal(sim.stage4?.mapId, 'neighborhood_bike_road');
+  assert.equal(sim.stage4?.graziPregnant, false);
   assert.equal(sim.stage4?.cristianAge, 'unborn');
+  assert.equal(sim.stage4?.bikeRide?.x, STAGE4_SCHOOL_BIKE_START_X);
   seenCristianAges.push(sim.stage4!.cristianAge);
-  assert.ok(getStage4CutsceneCaption(sim)?.canSkipIntro);
 
-  // 1. Skip pregnancy intro -> explores mom's house yard (living at mom's house during pregnancy)
-  sim = skipIntroCutscene(sim);
-  assert.equal(sim.questPhase, 's4_explore_moms_house');
-  assert.ok(sim.stage4?.unlockedMemories.includes('mem_s4_gravidez'));
-  while (sim.activeDialogue) sim = advanceDialogue(sim);
+  assert.ok(getStage4CutsceneCaption(sim)?.text.includes('buscar Grazi'));
+  const schoolArrivalX = sim.stage4!.bikeRide!.x;
+  sim = stepSimulationTimers(sim, 0.6);
+  assert.ok(sim.stage4!.bikeRide!.x < schoolArrivalX);
+  assert.ok(sim.stage4!.bikeRide!.wheelAngle < 0);
+  assert.ok(sim.stage4!.bikeRide!.pedalPhase > 0);
 
-  // Walk to bicycle -> launches REAL PLAYABLE twilight bicycle ride (not a passive cutscene!)
-  sim = { ...sim, player: { ...sim.player, x: STAGE4_BICYCLE_POS.x, y: STAGE4_BICYCLE_POS.y } };
-  sim = triggerInteraction(sim).next;
-  assert.equal(sim.activeDialogue?.id, 's4_bicycle_prompt');
-  while (sim.activeDialogue) sim = advanceDialogue(sim);
-  assert.equal(sim.questPhase, 's4_ride_bicycle');
+  sim = stepSimulationTimers(sim, 0.9);
+  assert.equal(sim.stage4?.bikeRide?.x, STAGE4_SCHOOL_BIKE_STOP_X);
+  assert.ok(getStage4CutsceneCaption(sim)?.text.includes('sobe na garupa'));
+  sim = stepSimulationTimers(sim, 1.3);
+  assert.equal(sim.stage4?.bikeRide?.x, STAGE4_SCHOOL_BIKE_STOP_X);
+
+  sim = stepSimulationTimers(sim, 0.3);
+  assert.ok(sim.stage4!.bikeRide!.x < STAGE4_SCHOOL_BIKE_STOP_X);
+  assert.equal(sim.stage4?.bikeRide?.facing, 'left');
+  assert.ok(sim.stage4!.bikeRide!.wheelAngle < 0);
+
+  for (let i = 0; i < 120 && !sim.activeDialogue; i++) {
+    sim = stepSimulationTimers(sim, 0.1);
+  }
+  assert.equal(sim.stage4?.mapId, 'moms_house_yard');
   assert.equal(sim.stage4?.cutscene, 'none');
-  assert.equal(sim.stage4?.bikeRide?.active, true);
+  assert.equal(sim.stage4?.graziPregnant, false);
+  assert.equal(sim.activeDialogue?.id, 's4_pregnancy_reveal');
   assert.ok(sim.stage4?.unlockedMemories.includes('mem_s4_bicicleta'));
+  assert.ok(
+    STAGE_4_DIALOGUES.s4_pregnancy_reveal.lines.some((line) =>
+      line.text.includes('grávida'),
+    ),
+  );
+  assert.equal(
+    STAGE_4_DIALOGUES.s4_pregnancy_reveal.onCompleteAction,
+    's4_start_labor_walk',
+  );
 
-  // 2. Verify bicycle does NOT auto-advance without player input, then actively pedal & steer!
-  const startBikeX = sim.stage4!.bikeRide!.x;
-  sim = stepSimulationTimers(sim, 2.0);
-  assert.equal(sim.questPhase, 's4_ride_bicycle');
-  assert.equal(sim.stage4!.bikeRide!.x, startBikeX);
-
-  // Steer right & slightly up -> verifies wheel rotation, Ariel pedaling, Grazi sway & lane clamping
-  for (let i = 0; i < 12; i++) {
-    sim = movePlayer(sim, 1, -0.5, 0.1);
-  }
-  assert.ok(sim.stage4!.bikeRide!.x > startBikeX + 100);
-  assert.ok(sim.stage4!.bikeRide!.wheelAngle > 5);
-  assert.ok(sim.stage4!.bikeRide!.pedalPhase > 5);
-  assert.ok(Math.abs(sim.stage4!.bikeRide!.graziSway) > 0.001);
-
-  // Pedal all the way to the Bus Stop & Escola Estadual -> triggers affectionate arrival interaction!
-  for (let i = 0; i < 120; i++) {
-    sim = movePlayer(sim, 1, 0, 0.1);
-    if (sim.stage4?.bikeRide?.arrived) break;
-  }
-  assert.equal(sim.stage4?.bikeRide?.arrived, true);
-  assert.equal(sim.activeDialogue?.id, 's4_bicycle_arrival');
-
-  // 3. CHRONOLOGY GUARD: Finishing bicycle ride MUST go to 9-month labor walk (NOT meia-água construction!)
+  // Finishing the home dialogue announces the pregnancy and continues into the existing 9-month scene.
   while (sim.activeDialogue) sim = advanceDialogue(sim);
   assert.equal(sim.questPhase, 's4_cutscene_labor_walk');
   assert.equal(sim.stage4?.cutscene, 'labor_walk_bar');
   assert.equal(sim.stage4?.graziPregnant, true);
   assert.equal(sim.stage4?.cristianAge, 'unborn');
   assert.equal(sim.stage4?.buildStage, 0);
+  assert.ok(sim.stage4?.unlockedMemories.includes('mem_s4_gravidez'));
   assert.ok(sim.stage4?.unlockedMemories.includes('mem_s4_menino_lindo'));
 
-  // Verify the bar man's exact spontaneous line appears mid-cutscene
+  // Verify the bar man's exact line and the couple's reaction both appear.
   sim = stepSimulationTimers(sim, 5.2);
   const barCaption = getStage4CutsceneCaption(sim);
-  assert.ok(barCaption?.text.includes('Vai um menino lindo!'));
+  assert.ok(barCaption?.text.includes('Vai ser um meninão!'));
+  sim = stepSimulationTimers(sim, 3.3);
+  const reactionCaption = getStage4CutsceneCaption(sim);
+  assert.ok(reactionCaption?.text.includes('Grazi sorri'));
+  assert.ok(reactionCaption?.text.includes('Ariel fica sem graça'));
 
   // Step through remainder of labor walk -> Nani maternity trip to Maternidade Carmela Dutra!
   for (let i = 0; i < 120; i++) {
@@ -979,7 +1014,7 @@ test('Stage 4 narrative preserves blond Cristian, Nani maternity trip, yellow cr
     .toLowerCase();
 
   assert.ok(allText.includes('loirinho'));
-  assert.ok(allText.includes('vai um menino lindo!'));
+  assert.ok(allText.includes('vai ser um meninão!'));
   assert.ok(allText.includes('nani'));
   assert.ok(allText.includes('carmela dutra'));
   assert.ok(allText.includes('bercinho') || allText.includes('berço'));

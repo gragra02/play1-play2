@@ -691,20 +691,25 @@ export function moveStage3Player(
   }
 
   const len = Math.hypot(inputX, inputY);
-  if (len < 0.01) {
-    if (!state.player.isMoving) return state;
-    return { ...state, player: { ...state.player, isMoving: false } };
-  }
-
-  const nx = inputX / len;
-  const ny = inputY / len;
+  const nx = len > 0.01 ? inputX / len : 0;
+  const ny = len > 0.01 ? inputY / len : 0;
   const speed = s3.carryingItemId ? S3_PLAYER_SPEED * 0.9 : S3_PLAYER_SPEED;
-  const dist = speed * dt;
+  const targetVx = nx * speed;
+  const targetVy = ny * speed;
+  const currentVx = state.player.vx ?? 0;
+  const currentVy = state.player.vy ?? 0;
+  const blend = 1 - Math.exp(-(len > 0.01 ? 10.5 : 14.5) * dt);
+  let nextVx = currentVx + (targetVx - currentVx) * blend;
+  let nextVy = currentVy + (targetVy - currentVy) * blend;
+  if (len < 0.01 && Math.hypot(nextVx, nextVy) < 2) {
+    nextVx = 0;
+    nextVy = 0;
+  }
 
   let nextX = state.player.x;
   let nextY = state.player.y;
 
-  const tryX = nextX + nx * dist;
+  const tryX = nextX + nextVx * dt;
   if (
     canStandStage3(
       s3.mapId,
@@ -720,7 +725,7 @@ export function moveStage3Player(
     nextX = tryX;
   }
 
-  const tryY = nextY + ny * dist;
+  const tryY = nextY + nextVy * dt;
   if (
     canStandStage3(
       s3.mapId,
@@ -737,7 +742,7 @@ export function moveStage3Player(
   }
 
   const movedDist = Math.hypot(nextX - state.player.x, nextY - state.player.y);
-  const nextDir = directionFromVec(nx, ny, state.player.dir);
+  const nextDir = directionFromVec(nextVx, nextVy, state.player.dir);
 
   // Follow behavior: Two close couples! Ariel right beside Grazi, and Laura & Léo ALWAYS side-by-side holding hands!
   let nextNpcs = state.npcs;
@@ -790,6 +795,8 @@ export function moveStage3Player(
       x: nextX,
       y: nextY,
       dir: nextDir,
+      vx: nextVx,
+      vy: nextVy,
       isMoving: movedDist > 0.01,
       walkDistance: state.player.walkDistance + movedDist,
     },

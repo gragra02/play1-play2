@@ -1,14 +1,29 @@
-import { SKIN_URLS, getSkinSprite } from './characterSkins';
+import {
+  SKIN_URLS,
+  getS4GraziPregnantWalkSheetImage,
+  getSkinSprite,
+} from './characterSkins';
 import { getStage4MapBackdrop } from './environmentArt';
 import { MAP_COLS, MAP_ROWS, TILE_SIZE } from './mapData';
-import { OUTLINE, drawShadow, drawSkinImage, px } from './pixelArt';
+import {
+  GLOBAL_CHAR_SCALE,
+  OUTLINE,
+  drawShadow,
+  drawSkinImage,
+  getWalkSheetFrameBounds,
+  px,
+} from './pixelArt';
 import type { ParticlePool } from './sprites';
 import { drawMoodIcon } from './stage3Environments';
 import {
   STAGE4_BICYCLE_POS,
+  STAGE4_BIKE_BOARD_DURATION,
+  STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION,
+  STAGE4_BAR_MAN_POS,
   STAGE4_BUILD_SITE_POS,
   STAGE4_CONSOLE_POS,
   STAGE4_RADIO_POS,
+  STAGE4_SCHOOL_BIKE_START_X,
   STAGE_4_MEMORIES,
 } from './stage4Data';
 import type { CristianAgeStage, Direction, SimulationState } from './types';
@@ -29,11 +44,12 @@ function drawAdultAriel(
     isMoving?: boolean;
     bobY?: number;
     scaleBoost?: number;
+    embarrassed?: boolean;
   } = {},
 ): void {
   const boost = opts.scaleBoost ?? 1;
   const step = opts.isMoving ? Math.sin(opts.walkPhase ?? 0) : 0;
-  const bob = (opts.bobY ?? 0) + (opts.isMoving ? Math.abs(step) * -2.2 * boost : 0);
+  const bob = (opts.bobY ?? 0) + (opts.isMoving ? Math.abs(step) * -1.6 * boost : 0);
   const flipX = opts.dir === 'left';
   drawShadow(ctx, x, y + 6, 10 * boost, 4 * boost);
 
@@ -41,8 +57,10 @@ function drawAdultAriel(
   if (sprite) {
     drawSkinImage(ctx, sprite, x, y + bob, 49 * boost, {
       flipX,
-      tiltRad: opts.isMoving ? step * 0.045 : 0,
     });
+    if (opts.embarrassed) {
+      drawArielBlush(ctx, x, y + bob, boost);
+    }
     return;
   }
 
@@ -59,6 +77,20 @@ function drawAdultAriel(
   ctx.fillRect(cx - 9, cy - 21, 18, 15);
   ctx.fillStyle = '#3c5d87';
   ctx.fillRect(cx - 8, cy - 6, 16, 10);
+  if (opts.embarrassed) {
+    drawArielBlush(ctx, x, y + bob, boost);
+  }
+}
+
+function drawArielBlush(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  scale: number,
+): void {
+  ctx.fillStyle = '#e98e9b';
+  ctx.fillRect(px(x - 5 * scale), px(y - 31 * scale), 3 * scale, 1.5 * scale);
+  ctx.fillRect(px(x + 2 * scale), px(y - 31 * scale), 3 * scale, 1.5 * scale);
 }
 
 function drawAdultGrazi(
@@ -71,21 +103,72 @@ function drawAdultGrazi(
     isMoving?: boolean;
     pregnant?: boolean;
     pregnant9m?: boolean;
+    usePregnantWalkSheet?: boolean;
     bobY?: number;
     scaleBoost?: number;
   } = {},
 ): void {
   const boost = opts.scaleBoost ?? 1;
   const step = opts.isMoving ? Math.sin(opts.walkPhase ?? 0) : 0;
-  const bob = (opts.bobY ?? 0) + (opts.isMoving ? Math.abs(step) * -2.2 * boost : 0);
+  const bob = (opts.bobY ?? 0) + (opts.isMoving ? Math.abs(step) * -1.6 * boost : 0);
   const flipX = opts.dir === 'left';
-  drawShadow(ctx, x, y + 6, (opts.pregnant9m ? 11.5 : 10) * boost, 4 * boost);
+  drawShadow(
+    ctx,
+    x,
+    y + 6,
+    (opts.pregnant9m ? 11.5 : opts.pregnant ? 11 : 10) * boost,
+    4 * boost,
+  );
+
+  const pregnantWalkSheet = opts.usePregnantWalkSheet
+    ? getS4GraziPregnantWalkSheetImage()
+    : null;
+  if (pregnantWalkSheet) {
+    const direction = opts.dir ?? 'down';
+    const row = direction === 'up' ? 2 : direction === 'down' ? 0 : 1;
+    const column = opts.isMoving ? (step > 0.35 ? 1 : step < -0.35 ? 2 : 0) : 0;
+    const sourceFacesRight = row === 1 && column > 0;
+    const sheetFlipX =
+      row === 1 &&
+      ((direction === 'left' && sourceFacesRight) ||
+        (direction === 'right' && !sourceFacesRight));
+    const frame = getWalkSheetFrameBounds(pregnantWalkSheet)?.[row * 3 + column];
+
+    if (frame) {
+      const drawH = 48 * GLOBAL_CHAR_SCALE * boost;
+      const drawW = drawH * (frame.width / frame.height);
+      const footY = y + bob + 8.5;
+      const prevSmooth = ctx.imageSmoothingEnabled;
+      const prevQuality = ctx.imageSmoothingQuality;
+
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.translate(x, footY);
+      if (sheetFlipX) ctx.scale(-1, 1);
+      ctx.drawImage(
+        pregnantWalkSheet,
+        frame.x,
+        frame.y,
+        frame.width,
+        frame.height,
+        -drawW / 2,
+        -drawH,
+        drawW,
+        drawH,
+      );
+      ctx.restore();
+
+      ctx.imageSmoothingEnabled = prevSmooth;
+      ctx.imageSmoothingQuality = prevQuality;
+      return;
+    }
+  }
 
   const sprite = getSkinSprite(SKIN_URLS.s4GraziAdult);
   if (sprite) {
     drawSkinImage(ctx, sprite, x, y + bob, 48 * boost, {
       flipX,
-      tiltRad: opts.isMoving ? step * 0.045 : 0,
     });
 
     // Clearly visible, natural, proportional 9-month pregnancy belly curve
@@ -161,7 +244,7 @@ function drawMadrinhaNani(
 ): void {
   const boost = opts.scaleBoost ?? 1;
   const step = opts.isMoving ? Math.sin(opts.walkPhase ?? 0) : 0;
-  const bob = (opts.bobY ?? 0) + (opts.isMoving ? Math.abs(step) * -2.2 * boost : 0);
+  const bob = (opts.bobY ?? 0) + (opts.isMoving ? Math.abs(step) * -1.6 * boost : 0);
   const flipX = opts.dir === 'left';
   drawShadow(ctx, x, y + 6, 10 * boost, 4 * boost);
 
@@ -169,7 +252,6 @@ function drawMadrinhaNani(
   if (sprite) {
     drawSkinImage(ctx, sprite, x, y + bob, 48 * boost, {
       flipX,
-      tiltRad: opts.isMoving ? step * 0.045 : 0,
     });
     return;
   }
@@ -780,6 +862,8 @@ function drawBicycleCouple(
     facing: 'right' | 'left';
     speed: number;
   },
+  passengerOnBike = true,
+  graziPregnant = true,
 ): void {
   const wheelAngle = physics ? physics.wheelAngle : t * 10;
   const pedalPhase = physics ? physics.pedalPhase : t * 9;
@@ -955,16 +1039,17 @@ function drawBicycleCouple(
   ctx.rect(-60, -96, 120, 82); // clips cleanly at y = -14 (exact seat height!)
   ctx.clip();
 
-  // Grazi seated gracefully on the rear garupa rack, swaying gently with bicycle motion
-  ctx.save();
-  ctx.translate(-25, 11 + graziBob);
-  ctx.rotate(graziSway + (isMoving ? 0.03 : 0));
-  drawAdultGrazi(ctx, 0, 0, {
-    dir: 'right',
-    pregnant: true,
-    bobY: 0,
-  });
-  ctx.restore();
+  if (passengerOnBike) {
+    ctx.save();
+    ctx.translate(-25, 11 + graziBob);
+    ctx.rotate(graziSway + (isMoving ? 0.03 : 0));
+    drawAdultGrazi(ctx, 0, 0, {
+      dir: 'right',
+      pregnant: graziPregnant,
+      bobY: 0,
+    });
+    ctx.restore();
+  }
 
   // Young-adult short-haired Ariel seated squarely on the saddle, leaning slightly forward
   ctx.save();
@@ -976,44 +1061,43 @@ function drawBicycleCouple(
   ctx.restore();
   ctx.restore();
 
-  // Grazi's affectionate arm reaching forward to rest on Ariel's shoulder/back
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = OUTLINE;
-  ctx.lineWidth = 4.6;
-  ctx.beginPath();
-  ctx.moveTo(-21, -29 + graziBob);
-  ctx.lineTo(-10, -25 + pedalBob * 0.5);
-  ctx.stroke();
-  ctx.strokeStyle = '#f0c4a0';
-  ctx.lineWidth = 2.4;
-  ctx.beginPath();
-  ctx.moveTo(-21, -29 + graziBob);
-  ctx.lineTo(-10, -25 + pedalBob * 0.5);
-  ctx.stroke();
+  if (passengerOnBike) {
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 4.6;
+    ctx.beginPath();
+    ctx.moveTo(-21, -29 + graziBob);
+    ctx.lineTo(-10, -25 + pedalBob * 0.5);
+    ctx.stroke();
+    ctx.strokeStyle = '#f0c4a0';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(-21, -29 + graziBob);
+    ctx.lineTo(-10, -25 + pedalBob * 0.5);
+    ctx.stroke();
 
-  // Grazi's seated 2-segment legs bent comfortably on the side of the garupa rack!
-  const graziLegSway = Math.sin(graziSway * 7) * 1.4;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = OUTLINE;
-  ctx.lineWidth = 6.8;
-  ctx.beginPath();
-  ctx.moveTo(-25, -14 + graziBob * 0.4);
-  ctx.lineTo(-16 + graziLegSway * 0.5, -7 + graziBob * 0.3);
-  ctx.lineTo(-19 + graziLegSway, 5);
-  ctx.stroke();
-  ctx.strokeStyle = '#486c96';
-  ctx.lineWidth = 4.4;
-  ctx.beginPath();
-  ctx.moveTo(-25, -14 + graziBob * 0.4);
-  ctx.lineTo(-16 + graziLegSway * 0.5, -7 + graziBob * 0.3);
-  ctx.lineTo(-19 + graziLegSway, 5);
-  ctx.stroke();
-  // Grazi's sneaker resting near the rear footpeg
-  ctx.fillStyle = OUTLINE;
-  ctx.fillRect(-21 + px(graziLegSway), 4, 8, 4.5);
-  ctx.fillStyle = '#f2f4f8';
-  ctx.fillRect(-20 + px(graziLegSway), 5, 6.5, 2.8);
+    const graziLegSway = Math.sin(graziSway * 7) * 1.4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 6.8;
+    ctx.beginPath();
+    ctx.moveTo(-25, -14 + graziBob * 0.4);
+    ctx.lineTo(-16 + graziLegSway * 0.5, -7 + graziBob * 0.3);
+    ctx.lineTo(-19 + graziLegSway, 5);
+    ctx.stroke();
+    ctx.strokeStyle = '#486c96';
+    ctx.lineWidth = 4.4;
+    ctx.beginPath();
+    ctx.moveTo(-25, -14 + graziBob * 0.4);
+    ctx.lineTo(-16 + graziLegSway * 0.5, -7 + graziBob * 0.3);
+    ctx.lineTo(-19 + graziLegSway, 5);
+    ctx.stroke();
+    ctx.fillStyle = OUTLINE;
+    ctx.fillRect(-21 + px(graziLegSway), 4, 8, 4.5);
+    ctx.fillStyle = '#f2f4f8';
+    ctx.fillRect(-20 + px(graziLegSway), 5, 6.5, 2.8);
+  }
 
   // Ariel's near-side arm gripping the handlebars (shoulder -> elbow -> grip)
   ctx.strokeStyle = OUTLINE;
@@ -2012,23 +2096,63 @@ export function renderStage4World(
       },
     });
   } else if (s4.cutscene === 'bicycle_ride') {
-    // Beat 2: Animated evening bicycle ride squarely along the neighborhood street!
-    const p = Math.min(1, t / 9.5);
-    const bikeX = (2.8 + p * 17.6) * TILE_SIZE;
-    const bikeY = 10.45 * TILE_SIZE;
+    const bike = s4.bikeRide;
+    const bikeX = bike?.x ?? STAGE4_SCHOOL_BIKE_START_X;
+    const bikeY = bike?.y ?? 10.45 * TILE_SIZE;
+    const boardedAt =
+      STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION + STAGE4_BIKE_BOARD_DURATION;
+    const passengerOnBike = t >= boardedAt;
+    const speed = bike ? Math.hypot(bike.vx, bike.vy) : 0;
     queue.push({
       y: bikeY,
       draw: () => {
-        drawBicycleCouple(ctx, bikeX, bikeY, t);
-        if (Math.sin(t * 3) > 0.2) {
+        drawBicycleCouple(
+          ctx,
+          bikeX,
+          bikeY,
+          t,
+          bike
+            ? {
+                wheelAngle: bike.wheelAngle,
+                pedalPhase: bike.pedalPhase,
+                graziSway: bike.graziSway,
+                facing: bike.facing,
+                speed,
+              }
+            : undefined,
+          passengerOnBike,
+          false,
+        );
+
+        if (
+          t >= STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION &&
+          t < boardedAt
+        ) {
+          const boardingProgress = Math.min(
+            1,
+            (t - STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION) /
+              STAGE4_BIKE_BOARD_DURATION,
+          );
+          drawAdultGrazi(
+            ctx,
+            bikeX + 52 - boardingProgress * 28,
+            bikeY,
+            {
+              dir: 'left',
+              isMoving: boardingProgress < 0.8,
+              walkPhase: t * 7,
+            },
+          );
+          drawSpeechTag(ctx, bikeX, bikeY - 76, 'Grazi sobe na garupa');
+        } else if (t < STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION) {
+          drawSpeechTag(ctx, bikeX, bikeY - 76, 'Escola');
+        } else if (passengerOnBike && Math.sin(t * 3) > 0.2) {
           drawMoodIcon(ctx, bikeX - 8, bikeY - 78, 'heart');
         }
       },
     });
   } else if (s4.cutscene === 'labor_walk_bar') {
-    // Beat 3: DYNAMIC ANIMATED SCENE — 9-month pregnant Grazi & Ariel walking hand-in-hand,
-    // bar man exiting the corner bar doorway, passing by & saying "Vai um menino lindo!",
-    // followed by the couple's surprised & amused reaction!
+    // Beat 3: Grazi's approved pregnant walk sheet and Ariel hold hands past the bar.
     const sideY = 9.05 * TILE_SIZE;
     let coupleCenterX = 2.6 * TILE_SIZE;
     let coupleMoving = true;
@@ -2047,24 +2171,26 @@ export function renderStage4World(
     }
 
     const walkPhase = t * 6.8;
-    const coupleFacingReact = t >= 8.0 && t < 10.2;
+    const coupleFacingReact = t >= 8.4 && t < 10.2;
     const arielX = coupleCenterX - 15;
     const graziX = coupleCenterX + 15;
 
     // Bar man physically exits through the corner bar doorway (x ≈ 4.15*32, y ≈ 7.2*32)
     // walks onto the sidewalk and strolls past the couple!
-    let barManX = 4.15 * TILE_SIZE;
-    let barManY = 7.35 * TILE_SIZE;
+    const barDoorX = 4.15 * TILE_SIZE;
+    const barDoorY = 7.35 * TILE_SIZE;
+    let barManX = barDoorX;
+    let barManY = barDoorY;
     let barManVisible = t >= 1.1;
     let barManWave = false;
     if (t >= 1.1 && t < 3.6) {
       const p = (t - 1.1) / 2.5;
-      barManX = (4.15 + p * 0.5) * TILE_SIZE;
-      barManY = (7.35 + p * 1.45) * TILE_SIZE;
+      barManX = barDoorX + (STAGE4_BAR_MAN_POS.x - barDoorX) * p;
+      barManY = barDoorY + (STAGE4_BAR_MAN_POS.y - barDoorY) * p;
     } else if (t >= 3.6 && t < 5.6) {
       const p = (t - 3.6) / 2.0;
-      barManX = (4.65 + p * 4.2) * TILE_SIZE;
-      barManY = 8.8 * TILE_SIZE;
+      barManX = STAGE4_BAR_MAN_POS.x + p * (8.85 * TILE_SIZE - STAGE4_BAR_MAN_POS.x);
+      barManY = STAGE4_BAR_MAN_POS.y + p * (8.8 * TILE_SIZE - STAGE4_BAR_MAN_POS.y);
     } else if (t >= 5.6 && t < 8.4) {
       // Stops warmly just past Grazi & Ariel and comments spontaneously!
       barManX = 8.85 * TILE_SIZE;
@@ -2089,8 +2215,8 @@ export function renderStage4World(
             t,
             barManWave,
           );
-          if (t >= 4.4 && t < 8.5) {
-            drawSpeechTag(ctx, barManX, barManY - 72, '“Vai um menino lindo!”');
+          if (t >= 4.2 && t < 8.4) {
+            drawSpeechTag(ctx, barManX, barManY - 72, 'Vai ser um meninão!');
           }
         },
       });
@@ -2099,12 +2225,13 @@ export function renderStage4World(
     queue.push({
       y: sideY,
       draw: () => {
-        const laughBob = coupleFacingReact ? Math.abs(Math.sin(t * 8.5)) * -2.2 : 0;
+        const shyBob = coupleFacingReact ? Math.sin(t * 3.2) * -0.8 : 0;
         drawAdultAriel(ctx, arielX, sideY, {
           dir: 'right',
           isMoving: coupleMoving,
           walkPhase,
-          bobY: laughBob,
+          bobY: shyBob,
+          embarrassed: coupleFacingReact,
         });
         drawAdultGrazi(ctx, graziX, sideY, {
           dir: coupleFacingReact ? 'left' : 'right',
@@ -2112,20 +2239,20 @@ export function renderStage4World(
           walkPhase: walkPhase + 0.35,
           pregnant: true,
           pregnant9m: true,
-          bobY: laughBob,
+          usePregnantWalkSheet: true,
+          bobY: shyBob,
         });
         drawJoinedHands(
           ctx,
           arielX,
           graziX,
-          sideY + laughBob * 0.5,
+          sideY + shyBob * 0.5,
           coupleMoving ? Math.sin(walkPhase) * 2.2 : 0,
         );
 
         if (coupleFacingReact) {
-          drawSpeechTag(ctx, coupleCenterX, sideY - 86, 'Haha! Como ele adivinhou?!');
-          drawMoodIcon(ctx, arielX - 4, sideY - 102, 'smile');
-          drawMoodIcon(ctx, graziX + 6, sideY - 102, 'heart');
+          drawSpeechTag(ctx, arielX, sideY - 86, '...');
+          drawMoodIcon(ctx, graziX + 6, sideY - 102, 'smile');
         } else if (t >= 10.2) {
           drawMoodIcon(ctx, coupleCenterX, sideY - 86, 'heart');
         }
@@ -2602,9 +2729,10 @@ export function renderStage4World(
       draw: () => {
         drawAdultGrazi(ctx, sim.player.x, sim.player.y, {
           dir: sim.player.dir,
-          walkPhase: sim.player.walkDistance * 0.22,
+          walkPhase: sim.player.walkDistance * 0.11,
           isMoving: sim.player.isMoving,
           pregnant: s4.graziPregnant,
+          usePregnantWalkSheet: true,
         });
 
         // Carried construction material badge above Grazi when building the meia-água
@@ -2659,4 +2787,10 @@ export function renderStage4World(
   }
   ctx.fillStyle = glaze;
   ctx.fillRect(0, 0, viewW, viewH);
+
+  if (s4.cutscene === 'labor_walk_bar' && t < 0.65) {
+    const fadeAlpha = 1 - t / 0.65;
+    ctx.fillStyle = `rgba(0, 0, 0, ${fadeAlpha.toFixed(2)})`;
+    ctx.fillRect(0, 0, viewW, viewH);
+  }
 }

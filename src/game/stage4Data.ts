@@ -36,10 +36,10 @@ export const STAGE_4_MEMORIES: Stage4MemoryItem[] = [
   },
   {
     id: 'mem_s4_bicicleta',
-    title: 'Na garupa até a aula da noite',
-    subtitle: 'Rotina pelo bairro',
+    title: 'Na volta da escola, de bicicleta',
+    subtitle: 'A garupa até em casa',
     description:
-      'Enquanto moravam na casa da mãe de Grazi, Ariel trabalhava durante o dia e levava Grazi de bicicleta à noite até a escola ou o ponto de ônibus.',
+      'Ariel chegou de bicicleta para buscar Grazi na escola. Ela subiu na garupa, e os dois voltaram juntos para casa.',
     stageNumber: 4,
     mapId: 'moms_house_yard',
     x: 7.4 * TILE_SIZE,
@@ -62,10 +62,10 @@ export const STAGE_4_MEMORIES: Stage4MemoryItem[] = [
   },
   {
     id: 'mem_s4_menino_lindo',
-    title: '“Vai um menino lindo!”',
+    title: '“Vai ser um meninão!”',
     subtitle: 'O palpite certeiro na rua do bairro',
     description:
-      'Aos nove meses de gestação, Grazi e Ariel caminhavam de mãos dadas pela rua quando um senhor saindo do bar olhou com simpatia e disse espontaneamente: “Vai um menino lindo!” — sem nem saber o sexo do bebê.',
+      'Aos nove meses de gestação, Grazi e Ariel caminhavam de mãos dadas pela rua quando um senhor saindo do bar olhou com simpatia e disse espontaneamente: “Vai ser um meninão!” — sem nem saber o sexo do bebê.',
     stageNumber: 4,
     mapId: 'neighborhood_bike_road',
     x: 4.5 * TILE_SIZE,
@@ -181,6 +181,11 @@ export const STAGE_4_VIDEOGAME_PUZZLES: Stage4PuzzleChallenge[] = [
 ];
 
 export const STAGE4_BICYCLE_POS = { x: 7.2 * TILE_SIZE, y: 8.9 * TILE_SIZE };
+export const STAGE4_SCHOOL_BIKE_START_X = 704;
+export const STAGE4_SCHOOL_BIKE_STOP_X = 624;
+export const STAGE4_HOME_BIKE_DEST_X = 112;
+export const STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION = 1.5;
+export const STAGE4_BIKE_BOARD_DURATION = 1.5;
 export const STAGE4_BUILD_SITE_POS = { x: 12.6 * TILE_SIZE, y: 8.9 * TILE_SIZE };
 export const STAGE4_BAR_MAN_POS = { x: 4.3 * TILE_SIZE, y: 8.6 * TILE_SIZE };
 export const STAGE4_STREET_CONTINUE_POS = { x: 19.6 * TILE_SIZE, y: 9.8 * TILE_SIZE };
@@ -410,6 +415,41 @@ export const STAGE_4_DIALOGUES: Record<string, DialogueSequence> = {
     onCompleteAction: 's4_start_labor_walk',
   },
 
+  s4_pregnancy_reveal: {
+    id: 's4_pregnancy_reveal',
+    lines: [
+      {
+        id: 's4_pr_1',
+        speaker: 'grazi_adult',
+        speakerName: 'Grazi',
+        text: 'Ariel, tenho uma coisa muito especial pra te contar... Eu estou grávida.',
+        emotion: 'thoughtful',
+      },
+      {
+        id: 's4_pr_2',
+        speaker: 'ariel_adult',
+        speakerName: 'Ariel',
+        text: 'Sério? A gente vai ter um bebê? Que notícia linda, Grazi!',
+        emotion: 'surprised',
+      },
+      {
+        id: 's4_pr_3',
+        speaker: 'ariel_adult',
+        speakerName: 'Ariel',
+        text: 'Estou muito feliz. Vamos viver essa aventura juntinhos, um passo de cada vez.',
+        emotion: 'romantic',
+      },
+      {
+        id: 's4_pr_4',
+        speaker: 'grazi_adult',
+        speakerName: 'Grazi',
+        text: 'Eu sabia que você ia ficar feliz. Vai ser uma fase muito especial pra nós dois.',
+        emotion: 'happy',
+      },
+    ],
+    onCompleteAction: 's4_start_labor_walk',
+  },
+
   s4_crib_reflection: {
     id: 's4_crib_reflection',
     lines: [
@@ -513,7 +553,7 @@ export const STAGE_4_DIALOGUES: Record<string, DialogueSequence> = {
         id: 's4_bm_1',
         speaker: 'bar_man',
         speakerName: 'Senhor Saindo do Bar',
-        text: '“Vai um menino lindo!”',
+        text: '“Vai ser um meninão!”',
       },
       {
         id: 's4_bm_2',
@@ -630,7 +670,7 @@ export const STAGE_4_DIALOGUES: Record<string, DialogueSequence> = {
         id: 's4_m4_1',
         speaker: 'narrator',
         speakerName: '★ Lembrança · O Senhor do Bar',
-        text: 'Sem saber se era menino ou menina, o senhor saindo do bar acertou com um sorriso simples: “Vai um menino lindo!”',
+        text: 'Sem saber se era menino ou menina, o senhor saindo do bar acertou com um sorriso simples: “Vai ser um meninão!”',
       },
     ],
   },

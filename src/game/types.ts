@@ -174,6 +174,8 @@ export interface PlayerState {
   width: number;
   height: number;
   dir: Direction;
+  vx?: number;
+  vy?: number;
   walkDistance: number;
   isMoving: boolean;
   isDancing: boolean;

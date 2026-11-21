@@ -15,6 +15,7 @@ import {
 import {
   OUTLINE,
   drawArielBreakdanceCap,
+  drawArielEloisaWalkTogether,
   drawArielEloisaSlowDance,
   drawArielForeheadKiss,
   drawArielSprite,
@@ -841,6 +842,7 @@ export function renderDiscotecaWorld(
   const s2Cutscene = s2 && s2.cutscene !== 'none' ? s2.cutscene : null;
 
   const interiorArt = getDiscotecaInteriorBackdrop();
+  const facadeArt = getDiscotecaExteriorBackdrop();
   const coverFloor = Math.max(viewW / WORLD_WIDTH, viewH / WORLD_HEIGHT);
   const baseScale = interiorArt
     ? titlePreview
@@ -905,6 +907,26 @@ export function renderDiscotecaWorld(
   if (interiorArt) {
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(interiorArt, 0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+
+    if (facadeArt) {
+      const frameX = 360;
+      const frameY = 41;
+      const frameW = 48;
+      const frameH = 28;
+      const imageScale = Math.min(frameW / facadeArt.naturalWidth, frameH / facadeArt.naturalHeight);
+      const imageW = facadeArt.naturalWidth * imageScale;
+      const imageH = facadeArt.naturalHeight * imageScale;
+
+      ctx.fillStyle = '#241a17';
+      ctx.fillRect(frameX, frameY, frameW, frameH);
+      ctx.drawImage(
+        facadeArt,
+        frameX + (frameW - imageW) / 2,
+        frameY + (frameH - imageH) / 2,
+        imageW,
+        imageH,
+      );
+    }
 
     // Subtle translucent beat-reactive disco shimmer over the central dance floor
     const beatPulse = Math.floor(sim.beatTimer * (isRomantic ? 1.0 : 2.1));
@@ -1057,8 +1079,38 @@ export function renderDiscotecaWorld(
     s2Cutscene === 'ending_transition' ||
     s2Cutscene === 'breakdance_circle';
 
+  const eloisaEntryAriel =
+    s2Cutscene === 'eloisa_reunion' ? sim.npcs.find((npc) => npc.role === 'ariel') : undefined;
+  const eloisaEntryEloisa =
+    s2Cutscene === 'eloisa_reunion' ? sim.npcs.find((npc) => npc.role === 'eloisa') : undefined;
+  const renderEloisaEntryTogether = Boolean(
+    eloisaEntryAriel?.visible && eloisaEntryEloisa?.visible,
+  );
+  if (renderEloisaEntryTogether && eloisaEntryAriel && eloisaEntryEloisa) {
+    const isWalking = (s2?.cutsceneElapsed ?? 99) < 2.2;
+    queue.push({
+      y: Math.max(eloisaEntryAriel.y, eloisaEntryEloisa.y),
+      draw: () =>
+        drawArielEloisaWalkTogether(
+          ctx,
+          (eloisaEntryAriel.x + eloisaEntryEloisa.x) / 2,
+          (eloisaEntryAriel.y + eloisaEntryEloisa.y) / 2,
+          (s2?.cutsceneElapsed ?? 0) * 8.2,
+          isWalking,
+          eloisaEntryAriel.dir,
+        ),
+    });
+  }
+
   for (const npc of sim.npcs) {
     if (!npc.visible) continue;
+
+    if (
+      renderEloisaEntryTogether &&
+      (npc.role === 'ariel' || npc.role === 'eloisa')
+    ) {
+      continue;
+    }
 
     if (
       s2ReplacesPrincipals &&
@@ -1091,6 +1143,7 @@ export function renderDiscotecaWorld(
             drawArielSprite(ctx, npc.x, npc.y, {
               dir: npc.dir,
               isMoving: isWalking,
+              useWalkSheetForIdle: true,
               walkPhase: isWalking ? sim.elapsedSeconds * 8.5 : npc.dancePhaseOffset * 2.5,
               emotion: arielEmotion,
             });
@@ -1125,6 +1178,7 @@ export function renderDiscotecaWorld(
           drawLauraSprite(ctx, npc.x, npc.y, {
             dir: npc.dir,
             emotion: lauraEmotion,
+            useWalkSheetForIdle: true,
           }),
       });
       continue;
@@ -1461,7 +1515,8 @@ export function renderDiscotecaWorld(
         drawGraziSprite(ctx, sim.player.x, sim.player.y, {
           dir: sim.player.dir,
           isMoving: sim.player.isMoving,
-          walkPhase: sim.player.walkDistance * 0.25,
+          useWalkSheetForIdle: true,
+          walkPhase: sim.player.walkDistance * 0.11,
           emotion: graziEmotion,
         });
         if (s2Cutscene === 'eloisa_reunion' && s2 && s2.cutsceneElapsed >= 5.2) {

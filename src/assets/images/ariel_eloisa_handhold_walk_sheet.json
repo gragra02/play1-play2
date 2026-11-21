@@ -1,0 +1,96 @@
+{
+  "image": "ariel_eloisa_handhold_walk_sheet.png",
+  "columns": 3,
+  "rows": [
+    {
+      "direction": "down",
+      "frames": [
+        "idle",
+        "stepA",
+        "stepB"
+      ],
+      "available": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "direction": "left",
+      "frames": [
+        "idle",
+        "stepA",
+        "stepB"
+      ],
+      "available": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "direction": "up",
+      "frames": [
+        "idle",
+        "stepA",
+        "stepB"
+      ],
+      "available": [
+        true,
+        true,
+        true
+      ]
+    }
+  ],
+  "cell": {
+    "width": 550,
+    "height": 512
+  },
+  "frameMap": [
+    {
+      "cell": 0,
+      "sourceCell": 0,
+      "available": true
+    },
+    {
+      "cell": 1,
+      "sourceCell": 2,
+      "available": true
+    },
+    {
+      "cell": 2,
+      "sourceCell": 3,
+      "available": true
+    },
+    {
+      "cell": 3,
+      "sourceCell": 4,
+      "available": true
+    },
+    {
+      "cell": 4,
+      "sourceCell": 6,
+      "available": true
+    },
+    {
+      "cell": 5,
+      "sourceCell": 7,
+      "available": true
+    },
+    {
+      "cell": 6,
+      "sourceCell": 8,
+      "available": true
+    },
+    {
+      "cell": 7,
+      "sourceCell": 10,
+      "available": true
+    },
+    {
+      "cell": 8,
+      "sourceCell": 11,
+      "available": true
+    }
+  ]
+}

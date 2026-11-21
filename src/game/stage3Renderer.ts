@@ -6,7 +6,9 @@ import { MAP_COLS, MAP_ROWS, TILE_SIZE } from './mapData';
 import {
   drawArielCarryBoxSprite,
   drawArielSprite,
+  drawCoupleJoinedHands,
   drawGraziArielWalkTogether,
+  drawGraziSpriteAtCoupleScale,
   drawGraziSprite,
   drawHeldMovingBox,
   drawLauraSprite,
@@ -29,7 +31,6 @@ import {
   type Stage3TileKind,
 } from './stage3Data';
 import {
-  drawCoupleJoinedHands,
   drawHotdogCartLiveEffects,
   drawHotdogEatingCutsceneActors,
   drawHotdogFloorTile,
@@ -924,9 +925,14 @@ export function renderStage3World(
       queue.push({
         y: 7.0 * TILE_SIZE,
         draw: () => {
-          drawGraziSprite(ctx, 7.15 * TILE_SIZE, 7.0 * TILE_SIZE, { dir: 'right', emotion: 'happy' });
-          drawArielSprite(ctx, 8.1 * TILE_SIZE, 7.0 * TILE_SIZE, { dir: 'left' });
-          drawCoupleJoinedHands(ctx, 7.15 * TILE_SIZE, 7.0 * TILE_SIZE, 8.1 * TILE_SIZE, 7.0 * TILE_SIZE, true);
+          const graziX = 7.0 * TILE_SIZE;
+          const arielX = 7.78 * TILE_SIZE;
+          drawGraziSpriteAtCoupleScale(ctx, graziX, 7.0 * TILE_SIZE, {
+            dir: 'right',
+            emotion: 'happy',
+          });
+          drawArielSprite(ctx, arielX, 7.0 * TILE_SIZE, { dir: 'left' });
+          drawCoupleJoinedHands(ctx, graziX, 7.0 * TILE_SIZE, arielX, 7.0 * TILE_SIZE, true);
           if (t > 0.6) {
             drawMoodIcon(ctx, 7.62 * TILE_SIZE, 7.0 * TILE_SIZE - 56, 'heart');
           }
@@ -938,7 +944,7 @@ export function renderStage3World(
       const wy = 8.2 * TILE_SIZE;
       queue.push({
         y: wy,
-        draw: () => drawGraziArielWalkTogether(ctx, wx, wy, t * 7.5, true),
+        draw: () => drawGraziArielWalkTogether(ctx, wx, wy, t * 7.5, true, 'right'),
       });
     } else {
       const ex = 11.1 * TILE_SIZE;
@@ -984,10 +990,9 @@ export function renderStage3World(
     queue.push({
       y: py,
       draw: () => {
-        drawGraziSprite(ctx, 10.8 * TILE_SIZE, py + hop * 0.7, { dir: 'down', emotion: 'happy' });
-        drawArielSprite(ctx, 12.2 * TILE_SIZE, py + hop, { dir: 'down' });
+        drawGraziArielWalkTogether(ctx, 11.5 * TILE_SIZE, py + hop, t * 4, false, 'down');
         drawLeoSprite(ctx, 13.6 * TILE_SIZE, py + hop * 0.8, { dir: 'down', bobPhase: t * 4 });
-        drawMoodIcon(ctx, 12.2 * TILE_SIZE, py - 58, 'smile');
+        drawMoodIcon(ctx, 11.5 * TILE_SIZE, py - 58, 'smile');
       },
     });
   } else if (s3.cutscene === 'moving_proposal') {
@@ -1012,8 +1017,49 @@ export function renderStage3World(
     });
   } else {
     // Live Playable Exploration!
+    const arielNpc = sim.npcs.find((n) => n.role === 'ariel' && n.visible);
+    const arielTogether = Boolean(
+      arielNpc &&
+        (s3.arielFollowsPlayer || s3.friendsFollowPlayer) &&
+        !s3.carryingItemId &&
+        mapId !== 'moving_house' &&
+        Math.hypot(sim.player.x - arielNpc.x, sim.player.y - arielNpc.y) <= 40,
+    );
+    const lauraNpc = sim.npcs.find((n) => n.role === 'laura' && n.visible);
+    const leoNpc = sim.npcs.find((n) => n.role === 'leo' && n.visible);
+    const lauraLeoTogether =
+      lauraNpc &&
+      leoNpc &&
+      Math.hypot(lauraNpc.x - leoNpc.x, lauraNpc.y - leoNpc.y) <= 44;
+
+    if (lauraLeoTogether && lauraNpc && leoNpc) {
+      const coupleX = (lauraNpc.x + leoNpc.x) / 2;
+      const coupleY = (lauraNpc.y + leoNpc.y) / 2;
+      const isFollowing = sim.player.isMoving && s3.friendsFollowPlayer;
+      queue.push({
+        y: Math.max(lauraNpc.y, leoNpc.y) + 1,
+        draw: () =>
+          drawLauraLeoWalkTogether(
+            ctx,
+            coupleX,
+            coupleY,
+            isFollowing ? sim.player.walkDistance * 0.11 : sim.elapsedSeconds * 1.8,
+            isFollowing,
+            isFollowing ? sim.player.dir : 'down',
+            Math.sin(sim.elapsedSeconds * 2.1) > 0.35,
+          ),
+      });
+    }
+
     for (const npc of sim.npcs) {
       if (!npc.visible || npc.role === 'vendor' || npc.role === 'clerk') continue;
+      if (arielTogether && npc.role === 'ariel') continue;
+      if (
+        lauraLeoTogether &&
+        (npc.role === 'laura' || npc.role === 'leo')
+      ) {
+        continue;
+      }
 
       if (mapId === 'moving_house' && (npc.role === 'ariel' || npc.role === 'leo')) {
         const cycle = (s3.helperTimer + (npc.role === 'leo' ? 3.2 : 0)) % 6.4;
@@ -1025,7 +1071,7 @@ export function renderStage3World(
               if (npc.role === 'ariel') {
                 drawArielCarryBoxSprite(ctx, npc.x, npc.y, {
                   facingLeft: npc.dir === 'left',
-                  walkPhase: sim.elapsedSeconds * 8.5,
+                  walkPhase: sim.elapsedSeconds * 5.2,
                 });
               } else {
                 drawLeoCarryBoxSprite(ctx, npc.x, npc.y, {
@@ -1062,19 +1108,22 @@ export function renderStage3World(
           if (npc.role === 'ariel') {
             drawArielSprite(ctx, npc.x, npc.y, {
               dir: npc.dir,
-              walkPhase: isFollowing ? sim.player.walkDistance * 0.22 : 0,
+              walkPhase: isFollowing ? sim.player.walkDistance * 0.11 : 0,
               isMoving: isFollowing,
+              useWalkSheetForIdle: true,
             });
           } else if (npc.role === 'laura') {
             drawLauraSprite(ctx, npc.x, npc.y, {
               dir: npc.dir,
               dancePhase: isFollowing ? sim.player.walkDistance * 0.22 : sim.elapsedSeconds * 2.5,
+              useWalkSheetForIdle: true,
             });
           } else if (npc.role === 'leo') {
             drawLeoSprite(ctx, npc.x, npc.y, {
               dir: npc.dir,
               walkDist: isFollowing ? sim.player.walkDistance : 0,
               isMoving: isFollowing,
+              useWalkSheetForIdle: true,
               bobPhase: sim.elapsedSeconds * 2.4,
             });
           }
@@ -1084,18 +1133,32 @@ export function renderStage3World(
 
     // Player (Grazi) + carried moving box when on Moving Day
     queue.push({
-      y: sim.player.y,
+      y: arielTogether && arielNpc
+        ? (sim.player.y + arielNpc.y) / 2
+        : sim.player.y,
       draw: () => {
         const carried = s3.carryingItemId
           ? s3.movingItems.find((i) => i.id === s3.carryingItemId) ?? null
           : null;
+        if (arielTogether && arielNpc) {
+          drawGraziArielWalkTogether(
+            ctx,
+            (sim.player.x + arielNpc.x) / 2,
+            (sim.player.y + arielNpc.y) / 2,
+            sim.player.walkDistance * 0.11,
+            sim.player.isMoving,
+            sim.player.dir,
+          );
+          return;
+        }
         if (carried && sim.player.dir === 'up') {
           drawHeldMovingBox(ctx, sim.player.x, sim.player.y - 22, carried.kind);
         }
         drawGraziSprite(ctx, sim.player.x, sim.player.y, {
           dir: sim.player.dir,
-          walkPhase: sim.player.walkDistance * 0.22,
+          walkPhase: sim.player.walkDistance * 0.11,
           isMoving: sim.player.isMoving,
+          useWalkSheetForIdle: true,
           emotion: sim.player.reactionEmotion === 'none' ? 'happy' : sim.player.reactionEmotion,
         });
         if (carried && sim.player.dir !== 'up') {
@@ -1104,36 +1167,6 @@ export function renderStage3World(
         }
       },
     });
-
-    // Render couple hand-holding & warm affectionate heart whenever Laura & Léo (or Grazi & Ariel) are side-by-side!
-    const lauraNpc = sim.npcs.find((n) => n.role === 'laura' && n.visible);
-    const leoNpc = sim.npcs.find((n) => n.role === 'leo' && n.visible);
-    if (lauraNpc && leoNpc && Math.hypot(lauraNpc.x - leoNpc.x, lauraNpc.y - leoNpc.y) <= 44) {
-      const coupleY = Math.max(lauraNpc.y, leoNpc.y) + 1;
-      queue.push({
-        y: coupleY,
-        draw: () => {
-          drawCoupleJoinedHands(ctx, lauraNpc.x, lauraNpc.y, leoNpc.x, leoNpc.y);
-          if (Math.sin(sim.elapsedSeconds * 2.1) > 0.35) {
-            const mx = (lauraNpc.x + leoNpc.x) / 2;
-            const my = (lauraNpc.y + leoNpc.y) / 2 - 58;
-            drawMoodIcon(ctx, mx, my, 'heart');
-          }
-        },
-      });
-    }
-
-    const arielNpc = sim.npcs.find((n) => n.role === 'ariel' && n.visible);
-    if (
-      arielNpc &&
-      s3.arielFollowsPlayer &&
-      Math.hypot(sim.player.x - arielNpc.x, sim.player.y - arielNpc.y) <= 40
-    ) {
-      queue.push({
-        y: Math.max(sim.player.y, arielNpc.y) + 1,
-        draw: () => drawCoupleJoinedHands(ctx, sim.player.x, sim.player.y, arielNpc.x, arielNpc.y),
-      });
-    }
   }
 
   queue.sort((a, b) => a.y - b.y);

@@ -1,15 +1,23 @@
-import { SKIN_URLS, getSkinSprite } from './characterSkins';
+import {
+  SKIN_URLS,
+  getCharacterWalkSheetImage,
+  getSkinSprite,
+} from './characterSkins';
 import { getCaminhoNovoTravelBackdrop } from './environmentArt';
 import { MAP_COLS, MAP_ROWS, TILE_SIZE } from './mapData';
 import {
   drawArielSprite,
+  drawCoupleJoinedHands,
   drawGraziArielWalkTogether,
+  drawGraziSpriteAtCoupleScale,
   drawGraziSprite,
   drawLauraSprite,
   drawLeoSprite,
   drawShadow,
   drawSkinImage,
   drawSlowDanceCouple,
+  getWalkSheetFrameBounds,
+  drawWalkSheetFrame,
 } from './pixelArt';
 import type { Stage3TileKind } from './stage3Data';
 import type { Direction, Stage3CutsceneKind } from './types';
@@ -1151,42 +1159,6 @@ export function drawLivingRoomPlant(ctx: CanvasRenderingContext2D, cx: number, c
 // COUPLE PROXIMITY & HAND-HOLDING HELPERS (Laura & Léo, Grazi & Ariel)
 // Preserves 100% of approved character sprites untouched!
 // ============================================================================
-export function drawCoupleJoinedHands(
-  ctx: CanvasRenderingContext2D,
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-  highlight = false,
-): void {
-  const dist = Math.hypot(x2 - x1, y2 - y1);
-  if (dist > 26 || dist < 6) return;
-
-  const leftX = Math.min(x1, x2);
-  const rightX = Math.max(x1, x2);
-  const mx = Math.round((leftX + rightX) / 2);
-  const my = Math.round((y1 + y2) / 2 - 20);
-
-  if (highlight) {
-    ctx.fillStyle = 'rgba(255, 210, 148, 0.34)';
-    ctx.beginPath();
-    ctx.arc(mx, my, 9, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Subtle connecting forearms extending from each sprite's inner arm toward the clasped hands
-  const armSpan = Math.max(3, Math.min(8, Math.round((rightX - leftX - 14) / 2)));
-  ctx.fillStyle = '#c88d67';
-  ctx.fillRect(mx - armSpan - 1, my - 1, armSpan * 2 + 2, 3);
-  // Warm interlocked hands at center (no harsh black box)
-  ctx.fillStyle = '#efc09b';
-  ctx.fillRect(mx - 3, my - 2, 6, 3);
-  ctx.fillStyle = '#b47855';
-  ctx.fillRect(mx - 3, my + 1, 6, 2);
-  ctx.fillStyle = '#fff0d8';
-  ctx.fillRect(mx - 1, my - 1, 2, 1);
-}
-
 export function drawLauraLeoWalkTogether(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -1198,6 +1170,26 @@ export function drawLauraLeoWalkTogether(
 ): void {
   const step = isWalking ? Math.sin(walkPhase) : 0;
   const bob = isWalking ? -Math.abs(step) * 1.1 : 0;
+  const row = !isWalking ? 0 : dir === 'down' ? 0 : dir === 'up' ? 2 : 1;
+  const column = isWalking ? (step > 0 ? 1 : 2) : 0;
+  const walkSheet = getCharacterWalkSheetImage('lauraLeoCouple');
+
+  if (walkSheet) {
+    drawShadow(ctx, cx, cy + 9, 16.5, 4.4);
+    const widthScale = row === 1 ? 1 : 0.72;
+    if (
+      drawWalkSheetFrame(ctx, walkSheet, row * 3 + column, cx, cy, 37.5, {
+        bobY: bob,
+        scaleX: widthScale,
+      })
+    ) {
+      if (showHeart && Math.sin(walkPhase * 0.35) > 0.15) {
+        drawMoodIcon(ctx, cx, cy - 56 + bob, 'heart');
+      }
+      return;
+    }
+  }
+
   const lauraX = cx - 14;
   const leoX = cx + 14;
 
@@ -1241,7 +1233,7 @@ export function drawMovingProposalCutsceneActors(
   if (t < 2.8) {
     const p = Math.min(1, t / 2.2);
     const gap = 30 - p * 15;
-    drawGraziSprite(ctx, cx - gap, cy, {
+      drawGraziSpriteAtCoupleScale(ctx, cx - gap, cy, {
       dir: 'right',
       isMoving: p < 0.95,
       walkPhase: t * 5.5,
@@ -1262,9 +1254,9 @@ export function drawMovingProposalCutsceneActors(
   if (t < 5.8) {
     // Ariel takes Grazi's hands gently as he asks her to be his girlfriend again
     const breath = Math.sin((t - 2.8) * 3.0) * 0.5;
-    const graziX = cx - 14.5;
-    const arielX = cx + 14.5;
-    drawGraziSprite(ctx, graziX, cy + breath * 0.4, {
+    const graziX = cx - 12.5;
+    const arielX = cx + 12.5;
+    drawGraziSpriteAtCoupleScale(ctx, graziX, cy + breath * 0.4, {
       dir: 'right',
       emotion: 'blush',
     });
@@ -1310,7 +1302,7 @@ export function drawHotdogEatingCutsceneActors(
     if (p.role === 'ariel') {
       drawArielSprite(ctx, p.x, p.y, { dir: 'right', isMoving: false });
     } else if (p.role === 'grazi') {
-      drawGraziSprite(ctx, p.x, p.y, { dir: 'down', emotion: 'amused' });
+      drawGraziSpriteAtCoupleScale(ctx, p.x, p.y, { dir: 'down', emotion: 'amused' });
     } else if (p.role === 'laura') {
       drawLauraSprite(ctx, p.x, p.y, { dir: 'right', dancePhase: t * 3 });
     } else {
@@ -1387,12 +1379,36 @@ export function drawWrongHandCutsceneActors(
       ? Math.abs(Math.sin(t * 5)) * -1.0
       : 0;
 
-  // 1. Draw the 4 friends using their 100% approved original sprites!
-  drawArielSprite(ctx, arielX, arielY, {
-    dir: arielDir,
-    walkPhase: arielMoving ? t * 7 : 0,
-    isMoving: arielMoving,
-  });
+  const pairWalkSheet = handsJoined
+    ? getCharacterWalkSheetImage('arielLauraCouple')
+    : null;
+  let pairSheetDrawn = false;
+  if (pairWalkSheet) {
+    const step = Math.sin(t * 7);
+    const column = step > 0.35 ? 1 : step < -0.35 ? 2 : 0;
+    const row = arielX <= lauraX ? 0 : 1;
+    const pairX = (arielX + lauraX) / 2;
+    const bob = -Math.abs(step) * 1.1 + giggle;
+    drawShadow(ctx, pairX, baseY + 9.5, 18, 4.4);
+    pairSheetDrawn = drawWalkSheetFrame(
+      ctx,
+      pairWalkSheet,
+      row * 3 + column,
+      pairX,
+      baseY,
+      36.5,
+      { bobY: bob, scaleX: 1.15 },
+    );
+  }
+
+  // Draw the composed pair while their hands are joined; otherwise use their individual sprites.
+  if (!pairSheetDrawn) {
+    drawArielSprite(ctx, arielX, arielY, {
+      dir: arielDir,
+      walkPhase: arielMoving ? t * 7 : 0,
+      isMoving: arielMoving,
+    });
+  }
 
   // Embarrassed bright-pink blush cheeks on Ariel once he realizes!
   if (isRevealed) {
@@ -1401,12 +1417,14 @@ export function drawWrongHandCutsceneActors(
     ctx.fillRect(Math.round(arielX + 3), Math.round(arielY - 35), 4, 3);
   }
 
-  drawLauraSprite(ctx, lauraX, baseY + giggle, {
-    dir: handsJoined || isRevealed ? 'right' : 'up',
-    dancePhase: isRevealed ? t * 6.5 : handsJoined ? t * 1.5 : 0,
-  });
+  if (!pairSheetDrawn) {
+    drawLauraSprite(ctx, lauraX, baseY + giggle, {
+      dir: handsJoined || isRevealed ? 'right' : 'up',
+      dancePhase: isRevealed ? t * 6.5 : handsJoined ? t * 1.5 : 0,
+    });
+  }
 
-  drawGraziSprite(ctx, graziX, baseY + (isRevealed ? giggle * 0.9 : 0), {
+  drawGraziSpriteAtCoupleScale(ctx, graziX, baseY + (isRevealed ? giggle * 0.9 : 0), {
     dir: handsJoined || isRevealed ? 'left' : 'up',
     emotion: isRevealed ? 'amused' : handsJoined ? 'amused' : 'happy',
   });
@@ -1417,7 +1435,7 @@ export function drawWrongHandCutsceneActors(
   });
 
   // 2. Clear pixel-art CLASPED HANDS detail between Ariel & Laura while Ariel is oblivious!
-  if (handsJoined) {
+  if (handsJoined && !pairSheetDrawn) {
     const hx = Math.round((arielX + lauraX) / 2);
     const hy = Math.round(baseY - 17);
     const pulse = 0.35 + 0.2 * Math.sin(t * 6);
@@ -1491,9 +1509,7 @@ export function drawVideoStorePickingCutsceneActors(
     const walkX = (7.6 + p * 4.8) * TILE_SIZE;
     const walkY = 8.1 * TILE_SIZE;
 
-    drawArielSprite(ctx, walkX - 30, walkY + 1, { dir: 'up', walkPhase: t * 7, isMoving: true });
-    drawGraziSprite(ctx, walkX, walkY, { dir: 'up', walkPhase: t * 7, isMoving: true, emotion: 'happy' });
-    drawCoupleJoinedHands(ctx, walkX - 30, walkY + 1, walkX, walkY);
+    drawGraziArielWalkTogether(ctx, walkX - 15, walkY, t * 7, true, 'up');
 
     drawLauraSprite(ctx, walkX + 42, walkY, { dir: 'up', isMoving: true, walkPhase: t * 7, dancePhase: t * 4 });
     drawLeoSprite(ctx, walkX + 72, walkY + 1, { dir: 'up', walkDist: t * 28, isMoving: true });
@@ -1514,9 +1530,14 @@ export function drawVideoStorePickingCutsceneActors(
     // At the checkout counter with the rented VHS tape (both couples close together!)
     const cy = 5.7 * TILE_SIZE;
     const hop = Math.abs(Math.sin(t * 6)) * -1.6;
-    drawArielSprite(ctx, 4.45 * TILE_SIZE, cy + hop, { dir: 'up' });
-    drawGraziSprite(ctx, 5.45 * TILE_SIZE, cy + hop * 0.7, { dir: 'up', emotion: 'happy' });
-    drawCoupleJoinedHands(ctx, 4.45 * TILE_SIZE, cy + hop, 5.45 * TILE_SIZE, cy + hop * 0.7);
+    drawGraziArielWalkTogether(
+      ctx,
+      4.95 * TILE_SIZE,
+      cy + hop * 0.85,
+      t * 2,
+      false,
+      'up',
+    );
 
     drawLauraSprite(ctx, 7.05 * TILE_SIZE, cy + hop, { dir: 'up', dancePhase: t * 4 });
     drawLeoSprite(ctx, 8.05 * TILE_SIZE, cy + hop * 0.8, { dir: 'up', bobPhase: t * 4 });
@@ -2165,17 +2186,10 @@ function drawSeatedApprovedUpperBody(
   anim: PopcornAnimState,
   t: number,
 ): void {
-  const skinUrl =
-    spec.role === 'ariel'
-      ? SKIN_URLS.arielFront
-      : spec.role === 'grazi'
-        ? anim.laughBounce < -0.4 || anim.chewBeat > 0.25
-          ? SKIN_URLS.graziAmused
-          : SKIN_URLS.graziFront
-        : spec.role === 'laura'
-          ? SKIN_URLS.lauraFront
-          : SKIN_URLS.leoFront;
-  const sprite = getSkinSprite(skinUrl);
+  const backSheet = getCharacterWalkSheetImage(
+    spec.role === 'laura' ? 'lauraBack' : spec.role,
+  );
+  const backFrame = backSheet ? getWalkSheetFrameBounds(backSheet)?.[6] : null;
 
   const torsoX = cx + anim.leanX;
   const breath = Math.sin(t * 2.4 + spec.cycleOffset * 1.4) * 0.65;
@@ -2184,12 +2198,14 @@ function drawSeatedApprovedUpperBody(
   const tiltRad =
     anim.leanX * 0.008 + (anim.glanceDir !== 0 ? anim.glanceDir * 0.04 : 0);
 
-  if (sprite) {
-    const aspect = sprite.width / Math.max(1, sprite.height);
+  if (backSheet && backFrame) {
     const fullH = spec.fullH;
-    const fullW = fullH * aspect;
-    const upperSrcH = Math.round(sprite.height * spec.upperFrac);
     const upperDrawH = fullH * spec.upperFrac;
+    const upperSrcH =
+      spec.role === 'laura'
+        ? backFrame.height
+        : Math.round(backFrame.height * spec.upperFrac);
+    const fullW = (upperDrawH * backFrame.width) / Math.max(1, upperSrcH);
 
     const prevSmooth = ctx.imageSmoothingEnabled;
     const prevQuality = ctx.imageSmoothingQuality;
@@ -2222,33 +2238,16 @@ function drawSeatedApprovedUpperBody(
     }
 
     ctx.drawImage(
-      sprite.canvas,
-      0,
-      0,
-      sprite.width,
+      backSheet,
+      backFrame.x,
+      backFrame.y,
+      backFrame.width,
       upperSrcH,
       -fullW / 2,
       -upperDrawH + 3,
       fullW,
       upperDrawH,
     );
-
-    // Subtle animated mouth open / chewing overlay directly on the lower face when eating
-    const mouthLocalY = -upperDrawH + fullH * 0.232;
-    if (anim.mouthOpen > 0.25) {
-      ctx.fillStyle = '#5e231c';
-      ctx.beginPath();
-      ctx.ellipse(0, mouthLocalY, 2.3 * anim.mouthOpen, 2.0 * anim.mouthOpen, 0, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (anim.chewBeat > 0.35) {
-      ctx.fillStyle = 'rgba(244, 146, 158, 0.38)';
-      ctx.beginPath();
-      ctx.arc(-5.5, mouthLocalY - 1, 2.4, 0, Math.PI * 2);
-      ctx.arc(5.5, mouthLocalY - 1, 2.4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#6b2c23';
-      ctx.fillRect(-2, mouthLocalY + (anim.chewBeat > 0.68 ? 0.8 : -0.2), 4, 1.4);
-    }
 
     ctx.restore();
     ctx.imageSmoothingEnabled = prevSmooth;
@@ -2258,13 +2257,13 @@ function drawSeatedApprovedUpperBody(
 
   // Fallback while skins are loading
   if (spec.role === 'ariel') {
-    drawArielSprite(ctx, torsoX, torsoY + 18, { dir: 'right', isMoving: false });
+    drawArielSprite(ctx, torsoX, torsoY + 18, { dir: 'up', isMoving: false });
   } else if (spec.role === 'grazi') {
-    drawGraziSprite(ctx, torsoX, torsoY + 18, { dir: 'down', emotion: 'amused' });
+    drawGraziSprite(ctx, torsoX, torsoY + 18, { dir: 'up', emotion: 'amused' });
   } else if (spec.role === 'laura') {
-    drawLauraSprite(ctx, torsoX, torsoY + 18, { dir: 'left', dancePhase: t * 2 });
+    drawLauraSprite(ctx, torsoX, torsoY + 18, { dir: 'up', dancePhase: t * 2 });
   } else {
-    drawLeoSprite(ctx, torsoX, torsoY + 18, { dir: 'left', bobPhase: t * 2 });
+    drawLeoSprite(ctx, torsoX, torsoY + 18, { dir: 'up', bobPhase: t * 2 });
   }
 }
 
@@ -2402,7 +2401,7 @@ export function drawMovieNightSofaActors(
     drawSeatedLowerBody(ctx, spec, spec.seatX, hipY, anim.leanX);
   }
 
-  // 3. Approved high-res character upper bodies & heads with living lean, chewing, laughing & glances
+  // 3. Back-facing upper bodies watch the TV while retaining the seated movement.
   for (const { spec, anim } of states) {
     drawSeatedApprovedUpperBody(ctx, spec, spec.seatX, hipY, anim, t);
   }
@@ -2620,24 +2619,14 @@ export function drawTravelTransitionCutscene(
   const leadX = scaledW * (0.18 + p * 0.6);
 
   if (cutscene === 'travel_to_moving') {
-    drawGraziSprite(ctx, leadX + 8, scaledWalkY, {
-      dir: 'right',
-      walkPhase: elapsed * 8,
-      isMoving: true,
-      emotion: 'happy',
-    });
+    drawGraziArielWalkTogether(ctx, leadX + 10, scaledWalkY, elapsed * 8, true, 'right');
     drawLeoSprite(ctx, leadX - 42, scaledWalkY + 1, {
       dir: 'right',
       walkDist: elapsed * 42,
       isMoving: true,
     });
-    drawArielSprite(ctx, leadX - 78, scaledWalkY + 2, {
-      dir: 'right',
-      walkPhase: elapsed * 8,
-      isMoving: true,
-    });
   } else {
-    drawGraziArielWalkTogether(ctx, leadX, scaledWalkY, elapsed * 8, true);
+    drawGraziArielWalkTogether(ctx, leadX, scaledWalkY, elapsed * 8, true, 'right');
     drawLauraLeoWalkTogether(ctx, leadX - 74, scaledWalkY + 1, elapsed * 8, true, 'right', true);
   }
   ctx.restore();

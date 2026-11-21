@@ -5,6 +5,11 @@ import {
   STAGE4_BUILD_SITE_POS,
   STAGE4_CONSOLE_POS,
   STAGE4_RADIO_POS,
+  STAGE4_BIKE_BOARD_DURATION,
+  STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION,
+  STAGE4_HOME_BIKE_DEST_X,
+  STAGE4_SCHOOL_BIKE_START_X,
+  STAGE4_SCHOOL_BIKE_STOP_X,
   STAGE4_STREET_CONTINUE_POS,
   STAGE_4_CLOSING_QUOTE,
   STAGE_4_DIALOGUES,
@@ -19,6 +24,7 @@ import type {
   Direction,
   SimulationState,
   SpeakerId,
+  Stage4BikeRideState,
   Stage4State,
 } from './types';
 
@@ -100,12 +106,12 @@ export function createStage4Simulation(
     mapId: 'moms_house_yard',
     locationLabel: 'Casa da Mãe de Grazi · Quintal e Varanda',
     eraLabel: 'Grazi aos 19 anos · Começo da Família',
-    cutscene: skipIntro ? 'none' : 'pregnancy_news',
+    cutscene: 'none',
     cutsceneElapsed: 0,
     cameraFocusX: 11.4 * TILE_SIZE,
     cameraFocusY: 9.0 * TILE_SIZE,
-    cameraZoom: skipIntro ? 1.0 : 1.15,
-    graziPregnant: true,
+    cameraZoom: 1.0,
+    graziPregnant: skipIntro,
     cristianAge: 'unborn',
     bikeRide: null,
     buildStage: 0,
@@ -123,9 +129,9 @@ export function createStage4Simulation(
     endingReadyToFinish: false,
   };
 
-  return {
+  const state: SimulationState = {
     stageId: 'stage-4',
-    questPhase: skipIntro ? 's4_explore_moms_house' : 's4_intro_pregnancy',
+    questPhase: skipIntro ? 's4_explore_moms_house' : 's4_cutscene_bicycle',
     intro: createDoneIntro(),
     arielActivity: 'standing',
     player: {
@@ -139,7 +145,7 @@ export function createStage4Simulation(
       isDancing: false,
       reactionEmotion: 'happy',
     },
-    npcs: createStage4Npcs('moms_house_yard', 'moms_house'),
+    npcs: skipIntro ? createStage4Npcs('moms_house_yard', 'moms_house') : [],
     activeDialogue: skipIntro ? STAGE_4_DIALOGUES.s4_moms_house_intro : null,
     dialogueLineIndex: 0,
     slowDance: createIdleSlowDance(),
@@ -151,6 +157,88 @@ export function createStage4Simulation(
     beatTimer: 0,
     discoveredProps: [],
     heartsSpawned: 0,
+  };
+  return skipIntro ? state : startStage4SchoolPickupCutscene(state);
+}
+
+export function startStage4SchoolPickupCutscene(state: SimulationState): SimulationState {
+  if (!state.stage4) return state;
+  return {
+    ...state,
+    questPhase: 's4_cutscene_bicycle',
+    stage4: {
+      ...state.stage4,
+      mapId: 'neighborhood_bike_road',
+      locationLabel: 'Escola · Saída para casa',
+      eraLabel: 'A volta da escola de bicicleta',
+      cutscene: 'bicycle_ride',
+      cutsceneElapsed: 0,
+      cameraFocusX: STAGE4_SCHOOL_BIKE_START_X,
+      cameraFocusY: 8.9 * TILE_SIZE,
+      cameraZoom: 1.0,
+      graziPregnant: false,
+      cristianAge: 'unborn',
+      bikeRide: {
+        active: false,
+        x: STAGE4_SCHOOL_BIKE_START_X,
+        y: S4_BIKE_START_Y,
+        vx: 0,
+        vy: 0,
+        facing: 'left',
+        wheelAngle: 0,
+        pedalPhase: 0,
+        graziSway: 0,
+        routeLength: WORLD_WIDTH,
+        destinationX: STAGE4_HOME_BIKE_DEST_X,
+        arrived: false,
+        farewellDialogueTriggered: false,
+      },
+    },
+    player: {
+      ...state.player,
+      x: STAGE4_SCHOOL_BIKE_START_X,
+      y: S4_BIKE_START_Y,
+      dir: 'left',
+      isMoving: false,
+    },
+    npcs: [],
+    activeDialogue: null,
+    dialogueLineIndex: 0,
+  };
+}
+
+export function startStage4PregnancyReveal(state: SimulationState): SimulationState {
+  if (!state.stage4) return state;
+  const s4 = unlockStage4Memory(
+    {
+      ...state.stage4,
+      mapId: 'moms_house_yard',
+      locationLabel: 'Casa da Mãe de Grazi · A notícia',
+      eraLabel: 'A descoberta da gravidez',
+      cutscene: 'none',
+      cutsceneElapsed: 0,
+      cameraFocusX: 11.4 * TILE_SIZE,
+      cameraFocusY: 9.0 * TILE_SIZE,
+      cameraZoom: 1.0,
+      graziPregnant: false,
+      bikeRide: null,
+    },
+    'mem_s4_bicicleta',
+  );
+  return {
+    ...state,
+    questPhase: 's4_explore_moms_house',
+    stage4: s4,
+    player: {
+      ...state.player,
+      x: 11.4 * TILE_SIZE,
+      y: 10.2 * TILE_SIZE,
+      dir: 'left',
+      isMoving: false,
+    },
+    npcs: createStage4Npcs('moms_house_yard', 'moms_house'),
+    activeDialogue: STAGE_4_DIALOGUES.s4_pregnancy_reveal,
+    dialogueLineIndex: 0,
   };
 }
 
@@ -639,6 +727,61 @@ function approach(current: number, target: number, maxDelta: number): number {
   return target;
 }
 
+function advanceBicycleMotion(
+  bike: Stage4BikeRideState,
+  inputX: number,
+  inputY: number,
+  dt: number,
+  forwardDirection: 'left' | 'right' = 'right',
+): Stage4BikeRideState {
+  const len = Math.hypot(inputX, inputY);
+  const nx = len > 0.01 ? inputX / len : 0;
+  const ny = len > 0.01 ? inputY / len : 0;
+  const isForward =
+    (nx > 0 && forwardDirection === 'right') ||
+    (nx < 0 && forwardDirection === 'left');
+  const targetVx =
+    nx * (nx === 0 || isForward ? S4_BIKE_MAX_SPEED_X : S4_BIKE_MAX_SPEED_X * 0.68);
+  const targetVy = ny * S4_BIKE_MAX_SPEED_Y;
+  const accelX = Math.abs(targetVx) > 0.1 ? 300 : 210;
+  const accelY = Math.abs(targetVy) > 0.1 ? 260 : 240;
+  const nextVx = approach(bike.vx, targetVx, accelX * dt);
+  const nextVy = approach(bike.vy, targetVy, accelY * dt);
+  const nextX = Math.max(64, Math.min(bike.routeLength - 68, bike.x + nextVx * dt));
+  const nextY = Math.max(
+    S4_BIKE_MIN_Y,
+    Math.min(S4_BIKE_MAX_Y, bike.y + nextVy * dt),
+  );
+  const dx = nextX - bike.x;
+  const dy = nextY - bike.y;
+  const distMoved = Math.hypot(dx, dy);
+  const speed = Math.hypot(nextVx, nextVy);
+  const isMoving = speed > 6;
+  const facing: 'right' | 'left' =
+    nx > 0.12 ? 'right' : nx < -0.12 ? 'left' : bike.facing;
+  const wheelDir = dx >= 0 ? 1 : -1;
+  const wheelAngle = bike.wheelAngle + wheelDir * (distMoved / 13);
+  const pedalPhase =
+    bike.pedalPhase + (len > 0.01 ? distMoved * 0.095 : distMoved * 0.025);
+  const targetSway =
+    (nextVy / S4_BIKE_MAX_SPEED_Y) * 0.075 +
+    (isMoving ? Math.sin(pedalPhase) * 0.032 : 0);
+  const graziSway =
+    bike.graziSway + (targetSway - bike.graziSway) * Math.min(1, dt * 8);
+
+  return {
+    ...bike,
+    x: nextX,
+    y: nextY,
+    vx: Math.abs(nextVx) < 0.5 && len < 0.01 ? 0 : nextVx,
+    vy: Math.abs(nextVy) < 0.5 && len < 0.01 ? 0 : nextVy,
+    facing,
+    wheelAngle,
+    pedalPhase,
+    graziSway,
+  };
+}
+
 function arriveAtBicycleDestination(state: SimulationState): SimulationState {
   const s4 = state.stage4;
   if (!s4?.bikeRide) return state;
@@ -688,96 +831,60 @@ export function moveStage4Player(
       return state;
     }
 
-    const len = Math.hypot(inputX, inputY);
-    const nx = len > 0.01 ? inputX / len : 0;
-    const ny = len > 0.01 ? inputY / len : 0;
-
-    const targetVx = nx >= 0 ? nx * S4_BIKE_MAX_SPEED_X : nx * (S4_BIKE_MAX_SPEED_X * 0.68);
-    const targetVy = ny * S4_BIKE_MAX_SPEED_Y;
-
-    const accelX = Math.abs(targetVx) > 0.1 ? 300 : 210;
-    const accelY = Math.abs(targetVy) > 0.1 ? 260 : 240;
-
-    const nextVx = approach(bike.vx, targetVx, accelX * dt);
-    const nextVy = approach(bike.vy, targetVy, accelY * dt);
-
-    const unclampedX = bike.x + nextVx * dt;
-    const unclampedY = bike.y + nextVy * dt;
-
-    const nextX = Math.max(64, Math.min(bike.routeLength - 68, unclampedX));
-    const nextY = Math.max(S4_BIKE_MIN_Y, Math.min(S4_BIKE_MAX_Y, unclampedY));
-
-    const dx = nextX - bike.x;
-    const dy = nextY - bike.y;
+    const nextBike = advanceBicycleMotion(bike, inputX, inputY, dt);
+    const dx = nextBike.x - bike.x;
+    const dy = nextBike.y - bike.y;
     const distMoved = Math.hypot(dx, dy);
-    const speed = Math.hypot(nextVx, nextVy);
+    const speed = Math.hypot(nextBike.vx, nextBike.vy);
     const isMoving = speed > 6;
-
-    const facing: 'right' | 'left' =
-      nx > 0.12 ? 'right' : nx < -0.12 ? 'left' : bike.facing;
-
-    // Wheel angle tied directly to linear rolling distance (13px wheel radius)
-    const wheelDir = dx >= 0 ? 1 : -1;
-    const nextWheelAngle = bike.wheelAngle + wheelDir * (distMoved / 13);
-    // Ariel pedals smoothly whenever driving the bike forward/around
-    const nextPedalPhase =
-      bike.pedalPhase + (len > 0.01 ? distMoved * 0.095 : distMoved * 0.025);
-    // Grazi leans naturally with vertical steering + gentle pedaling cadence
-    const targetSway = (nextVy / S4_BIKE_MAX_SPEED_Y) * 0.075 + (isMoving ? Math.sin(nextPedalPhase) * 0.032 : 0);
-    const nextGraziSway = bike.graziSway + (targetSway - bike.graziSway) * Math.min(1, dt * 8);
 
     const nextState: SimulationState = {
       ...state,
       player: {
         ...state.player,
-        x: nextX,
-        y: nextY,
-        dir: facing,
+        x: nextBike.x,
+        y: nextBike.y,
+        dir: nextBike.facing,
         isMoving,
         walkDistance: state.player.walkDistance + distMoved,
       },
       stage4: {
         ...state.stage4,
-        cameraFocusX: nextX + (facing === 'right' ? 96 : -36),
+        cameraFocusX: nextBike.x + (nextBike.facing === 'right' ? 96 : -36),
         cameraFocusY: 8.9 * TILE_SIZE,
-        bikeRide: {
-          ...bike,
-          x: nextX,
-          y: nextY,
-          vx: Math.abs(nextVx) < 0.5 && len < 0.01 ? 0 : nextVx,
-          vy: Math.abs(nextVy) < 0.5 && len < 0.01 ? 0 : nextVy,
-          facing,
-          wheelAngle: nextWheelAngle,
-          pedalPhase: nextPedalPhase,
-          graziSway: nextGraziSway,
-        },
+        bikeRide: nextBike,
       },
     };
 
     // Smoothly arrive and play the tender interaction upon reaching the Bus Stop / Escola Estadual!
-    if (nextX >= bike.destinationX) {
+    if (nextBike.x >= bike.destinationX) {
       return arriveAtBicycleDestination(nextState);
     }
     return nextState;
   }
 
   const len = Math.hypot(inputX, inputY);
-  if (len < 0.01) {
-    if (!state.player.isMoving) return state;
-    return { ...state, player: { ...state.player, isMoving: false } };
+  const nx = len > 0.01 ? inputX / len : 0;
+  const ny = len > 0.01 ? inputY / len : 0;
+  const targetVx = nx * S4_PLAYER_SPEED;
+  const targetVy = ny * S4_PLAYER_SPEED;
+  const currentVx = state.player.vx ?? 0;
+  const currentVy = state.player.vy ?? 0;
+  const blend = 1 - Math.exp(-(len > 0.01 ? 10.5 : 14.5) * dt);
+  let nextVx = currentVx + (targetVx - currentVx) * blend;
+  let nextVy = currentVy + (targetVy - currentVy) * blend;
+  if (len < 0.01 && Math.hypot(nextVx, nextVy) < 2) {
+    nextVx = 0;
+    nextVy = 0;
   }
-
-  const nx = inputX / len;
-  const ny = inputY / len;
-  const dist = S4_PLAYER_SPEED * dt;
 
   let nextX = state.player.x;
   let nextY = state.player.y;
 
-  const tryX = nextX + nx * dist;
+  const tryX = nextX + nextVx * dt;
   if (canStandStage4(state, tryX, nextY)) nextX = tryX;
 
-  const tryY = nextY + ny * dist;
+  const tryY = nextY + nextVy * dt;
   if (canStandStage4(state, nextX, tryY)) nextY = tryY;
 
   const moved = Math.hypot(nextX - state.player.x, nextY - state.player.y);
@@ -787,7 +894,9 @@ export function moveStage4Player(
       ...state.player,
       x: nextX,
       y: nextY,
-      dir: dirFromVec(nx, ny, state.player.dir),
+      dir: dirFromVec(nextVx, nextVy, state.player.dir),
+      vx: nextVx,
+      vy: nextVy,
       isMoving: moved > 0.01,
       walkDistance: state.player.walkDistance + moved,
     },
@@ -1075,7 +1184,15 @@ export function handleStage4DialogueComplete(
     return startStage4BicycleRide(baseCleared);
   }
   if (action === 's4_start_labor_walk') {
-    return startStage4LaborWalk(baseCleared, true);
+    if (!baseCleared.stage4) return baseCleared;
+    const pregnancyState = {
+      ...baseCleared,
+      stage4: unlockStage4Memory(
+        { ...baseCleared.stage4, graziPregnant: true },
+        'mem_s4_gravidez',
+      ),
+    };
+    return startStage4LaborWalk(pregnancyState, true);
   }
   if (action === 's4_start_maternity_trip') {
     return startStage4MaternityTrip(baseCleared);
@@ -1138,17 +1255,63 @@ export function stepStage4Simulation(state: SimulationState, dt: number): Simula
   }
 
   if (s4.cutscene === 'bicycle_ride') {
-    if (nextElapsed >= S4_BICYCLE_DURATION) {
-      return startStage4LaborWalk({ ...state, stage4: s4 }, true);
+    if (!s4.bikeRide) {
+      throw new Error('Bicycle cutscene requires bicycle state.');
     }
-    const p = Math.min(1, nextElapsed / S4_BICYCLE_DURATION);
+
+    const bike = s4.bikeRide;
+    const boardAt =
+      STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION + STAGE4_BIKE_BOARD_DURATION;
+    let nextBike: Stage4BikeRideState;
+    if (nextElapsed < STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION) {
+      nextBike = advanceBicycleMotion(bike, -1, 0, dt, 'left');
+      if (nextBike.x <= STAGE4_SCHOOL_BIKE_STOP_X) {
+        nextBike = {
+          ...nextBike,
+          x: STAGE4_SCHOOL_BIKE_STOP_X,
+          vx: 0,
+          vy: 0,
+        };
+      }
+    } else if (nextElapsed < boardAt) {
+      nextBike = {
+        ...bike,
+        x: STAGE4_SCHOOL_BIKE_STOP_X,
+        vx: 0,
+        vy: 0,
+        facing: 'left',
+      };
+    } else {
+      nextBike = advanceBicycleMotion(bike, -1, 0, dt, 'left');
+    }
+
+    const reachedHome =
+      nextElapsed >= boardAt && nextBike.x <= STAGE4_HOME_BIKE_DEST_X;
+    if (reachedHome || nextElapsed >= S4_BICYCLE_DURATION) {
+      return startStage4PregnancyReveal({
+        ...state,
+        stage4: {
+          ...s4,
+          cutsceneElapsed: nextElapsed,
+          bikeRide: {
+            ...nextBike,
+            x: STAGE4_HOME_BIKE_DEST_X,
+            vx: 0,
+            vy: 0,
+            arrived: true,
+          },
+        },
+      });
+    }
+
     return {
       ...state,
       stage4: {
         ...s4,
         cutsceneElapsed: nextElapsed,
-        cameraFocusX: (4.5 + p * 14.5) * TILE_SIZE,
+        cameraFocusX: nextBike.x - 36,
         cameraFocusY: 8.6 * TILE_SIZE,
+        bikeRide: nextBike,
       },
     };
   }
@@ -1290,10 +1453,20 @@ export function getStage4ObjectiveText(state: SimulationState): string | null {
     case 's4_explore_moms_house':
       return 'Explore o quintal da casa da mãe de Grazi e vá até a bicicleta com Ariel';
     case 's4_ride_bicycle':
-    case 's4_cutscene_bicycle':
       return s4.bikeRide?.arrived
         ? 'Chegaram ao ponto de ônibus e à escola à noite!'
         : 'Pedale com Ariel levando Grazi na garupa até o ponto de ônibus e a escola (→)';
+    case 's4_cutscene_bicycle':
+      if (s4.cutsceneElapsed < STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION) {
+        return 'Ariel chega de bicicleta para buscar Grazi na escola';
+      }
+      if (
+        s4.cutsceneElapsed <
+        STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION + STAGE4_BIKE_BOARD_DURATION
+      ) {
+        return 'Grazi sobe na garupa para voltar para casa com Ariel';
+      }
+      return 'Ariel e Grazi estão voltando para casa de bicicleta';
     case 's4_explore_labor_walk':
     case 's4_cutscene_labor_walk':
       return '9 meses de gestação · Caminhando de mãos dadas pela rua do bairro';
@@ -1361,19 +1534,27 @@ export function getStage4CutsceneCaption(state: SimulationState): Stage4Cutscene
   }
 
   if (s4.cutscene === 'bicycle_ride') {
-    if (t < 4.5) {
+    if (t < STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION) {
       return {
-        badge: 'ROTINA NO BAIRRO · FIM DE TARDE',
-        speaker: 'Na Bicicleta pelo Bairro',
+        badge: 'SAÍDA DA ESCOLA',
+        speaker: 'Ariel chega de bicicleta',
         speakerId: 'ariel_adult',
-        text: 'Ariel trabalhava durante o dia, e quando a noite caía, levava Grazi de bicicleta até a escola ou ao ponto de ônibus.',
+        text: 'Ariel chega de bicicleta à escola para buscar Grazi.',
+      };
+    }
+    if (t < STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION + STAGE4_BIKE_BOARD_DURATION) {
+      return {
+        badge: 'NA GARUPA',
+        speaker: 'Grazi sobe na bicicleta',
+        speakerId: 'grazi_adult',
+        text: 'Depois de cumprimentar Ariel, Grazi sobe na garupa para irem juntos para casa.',
       };
     }
     return {
-      badge: 'ROTINA NO BAIRRO · CUIDADO DIÁRIO',
-      speaker: 'Cada Trajeto Juntos',
-      speakerId: 'grazi_adult',
-      text: 'Entre as luzes dos postes e as ruas conhecidas do bairro, o companheirismo dos dois crescia a cada pedalada.',
+      badge: 'CAMINHO DE CASA',
+      speaker: 'A volta juntos',
+      speakerId: 'ariel_adult',
+      text: 'Ariel pedala com cuidado, e os dois seguem juntos para casa.',
     };
   }
 
@@ -1393,15 +1574,15 @@ export function getStage4CutsceneCaption(state: SimulationState): Stage4Cutscene
         speaker: 'Senhor saindo do bar',
         speakerId: 'bar_man',
         emotion: 'happy',
-        text: '“Vai um menino lindo!”',
+        text: '“Vai ser um meninão!”',
       };
     }
     return {
-      badge: 'SURPRESA E BOM HUMOR',
+      badge: 'GRAZI SORRI, ARIEL FICA SEM GRAÇA',
       speaker: 'Grazi & Ariel',
       speakerId: 'ariel_adult',
       emotion: 'amused',
-      text: 'Os dois se olham surpresos e caem na risada — sem nem saber o sexo do bebê, o palpite espontâneo ficou guardado para sempre na memória.',
+      text: 'Grazi sorri, enquanto Ariel fica sem graça com o comentário inesperado do senhor.',
     };
   }
 
@@ -1440,7 +1621,7 @@ export function getStage4CutsceneCaption(state: SimulationState): Stage4Cutscene
         speaker: 'Um Dia de Paz e Alegria',
         speakerId: 'grazi_adult',
         emotion: 'happy',
-        text: 'Como o senhor da esquina havia previsto com um sorriso, chegou um menino lindo — em um parto tranquilo, leve e cheio de felicidade.',
+        text: 'Como o senhor da esquina havia previsto com um sorriso, chegou o meninão — em um parto tranquilo, leve e cheio de felicidade.',
       };
     }
     if (t < 6.8) {

@@ -1,4 +1,9 @@
-import { SKIN_URLS, getSkinSprite } from './characterSkins';
+import {
+  SKIN_URLS,
+  getCharacterWalkSheetImage,
+  getGraziWalkSheetImage,
+  getSkinSprite,
+} from './characterSkins';
 import type { ProcessedSprite } from './spriteSheet';
 import type { Direction } from './types';
 
@@ -9,6 +14,10 @@ export function px(v: number): number {
 }
 
 export const GLOBAL_CHAR_SCALE = 1.6;
+const GRAZI_ARIEL_WALK_FRAME_SEQUENCES = {
+  right: [0, 1, 2, 6],
+  left: [3, 4, 5, 7],
+} as const;
 
 export function drawShadow(
   ctx: CanvasRenderingContext2D,
@@ -21,6 +30,40 @@ export function drawShadow(
   ctx.beginPath();
   ctx.ellipse(px(cx), px(cy), rx * 1.45, ry * 1.38, 0, 0, Math.PI * 2);
   ctx.fill();
+}
+
+export function drawCoupleJoinedHands(
+  ctx: CanvasRenderingContext2D,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  highlight = false,
+): void {
+  const dist = Math.hypot(x2 - x1, y2 - y1);
+  if (dist > 26 || dist < 6) return;
+
+  const leftX = Math.min(x1, x2);
+  const rightX = Math.max(x1, x2);
+  const mx = Math.round((leftX + rightX) / 2);
+  const my = Math.round((y1 + y2) / 2 - 20);
+
+  if (highlight) {
+    ctx.fillStyle = 'rgba(255, 210, 148, 0.34)';
+    ctx.beginPath();
+    ctx.arc(mx, my, 9, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const armSpan = Math.max(3, Math.min(8, Math.round((rightX - leftX - 14) / 2)));
+  ctx.fillStyle = '#c88d67';
+  ctx.fillRect(mx - armSpan - 1, my - 1, armSpan * 2 + 2, 3);
+  ctx.fillStyle = '#efc09b';
+  ctx.fillRect(mx - 3, my - 2, 6, 3);
+  ctx.fillStyle = '#b47855';
+  ctx.fillRect(mx - 3, my + 1, 6, 2);
+  ctx.fillStyle = '#fff0d8';
+  ctx.fillRect(mx - 1, my - 1, 2, 1);
 }
 
 // ============================================================================
@@ -798,6 +841,7 @@ export interface CharacterRenderOpts {
   dir: Direction;
   walkPhase?: number;
   isMoving?: boolean;
+  useWalkSheetForIdle?: boolean;
   isDancing?: boolean;
   dancePhase?: number;
   emotion?: SpriteEmotion;
@@ -805,6 +849,123 @@ export interface CharacterRenderOpts {
   handOnCap?: number;
   cavaloKick?: number;
   tiltRad?: number;
+}
+
+type WalkFrameBounds = { x: number; y: number; width: number; height: number };
+type WalkFrameBoundsGrid = Array<WalkFrameBounds | null>;
+
+const walkSheetFrameBoundsCache = new WeakMap<HTMLImageElement, WalkFrameBoundsGrid | null>();
+
+export function getWalkSheetFrameBounds(image: HTMLImageElement): WalkFrameBoundsGrid | null {
+  if (walkSheetFrameBoundsCache.has(image)) {
+    return walkSheetFrameBoundsCache.get(image) ?? null;
+  }
+  if (
+    typeof document === 'undefined' ||
+    image.naturalWidth % 3 !== 0 ||
+    image.naturalHeight % 3 !== 0
+  ) {
+    walkSheetFrameBoundsCache.set(image, null);
+    return null;
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  if (!context) {
+    walkSheetFrameBoundsCache.set(image, null);
+    return null;
+  }
+
+  context.drawImage(image, 0, 0);
+  const pixels = context.getImageData(0, 0, image.naturalWidth, image.naturalHeight).data;
+  const frameWidth = image.naturalWidth / 3;
+  const frameHeight = image.naturalHeight / 3;
+  const bounds: WalkFrameBoundsGrid = [];
+  let hasFrame = false;
+
+  for (let row = 0; row < 3; row++) {
+    for (let column = 0; column < 3; column++) {
+      const startX = column * frameWidth;
+      const startY = row * frameHeight;
+      let minX = startX + frameWidth;
+      let minY = startY + frameHeight;
+      let maxX = startX - 1;
+      let maxY = startY - 1;
+
+      for (let y = startY; y < startY + frameHeight; y++) {
+        for (let x = startX; x < startX + frameWidth; x++) {
+          if (pixels[(y * image.naturalWidth + x) * 4 + 3] === 0) continue;
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+      }
+
+      if (maxX < minX || maxY < minY) {
+        bounds.push(null);
+        continue;
+      }
+      hasFrame = true;
+      bounds.push({
+        x: minX,
+        y: minY,
+        width: maxX - minX + 1,
+        height: maxY - minY + 1,
+      });
+    }
+  }
+
+  if (!hasFrame) {
+    walkSheetFrameBoundsCache.set(image, null);
+    return null;
+  }
+  walkSheetFrameBoundsCache.set(image, bounds);
+  return bounds;
+}
+
+export function drawWalkSheetFrame(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  frameIndex: number,
+  cx: number,
+  cy: number,
+  targetHeight: number,
+  opts: { bobY?: number; flipX?: boolean; scaleX?: number; tiltRad?: number } = {},
+): boolean {
+  const frame = getWalkSheetFrameBounds(image)?.[frameIndex];
+  if (!frame) return false;
+
+  const drawH = targetHeight * GLOBAL_CHAR_SCALE;
+  const drawW = drawH * (frame.width / frame.height);
+  const prevSmooth = ctx.imageSmoothingEnabled;
+  const prevQuality = ctx.imageSmoothingQuality;
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.translate(cx, cy + (opts.bobY ?? 0) + 8.5);
+  if (opts.tiltRad) ctx.rotate(opts.tiltRad);
+  const scaleX = (opts.flipX ? -1 : 1) * (opts.scaleX ?? 1);
+  if (scaleX !== 1) ctx.scale(scaleX, 1);
+  ctx.drawImage(
+    image,
+    frame.x,
+    frame.y,
+    frame.width,
+    frame.height,
+    -drawW / 2,
+    -drawH,
+    drawW,
+    drawH,
+  );
+  ctx.restore();
+
+  ctx.imageSmoothingEnabled = prevSmooth;
+  ctx.imageSmoothingQuality = prevQuality;
+  return true;
 }
 
 export function drawGraziSprite(
@@ -815,7 +976,7 @@ export function drawGraziSprite(
 ): void {
   const swing = opts.isMoving ? Math.sin(opts.walkPhase ?? 0) : 0;
   const bob = opts.isMoving
-    ? Math.abs(Math.cos(opts.walkPhase ?? 0)) * -1.7
+    ? Math.abs(swing) * -1.2
     : opts.isDancing
       ? Math.sin(opts.dancePhase ?? 0) * -1.1
       : 0;
@@ -823,6 +984,27 @@ export function drawGraziSprite(
   drawShadow(ctx, cx, cy + 8, 9, 3.6);
 
   const emo = opts.emotion ?? 'none';
+
+  if (opts.isMoving || opts.useWalkSheetForIdle) {
+    const walkSheet = getGraziWalkSheetImage();
+    if (walkSheet) {
+      const row = opts.dir === 'up' ? 2 : opts.dir === 'down' ? 0 : 1;
+      const column = opts.isMoving ? (swing > 0.35 ? 1 : swing < -0.35 ? 2 : 0) : 0;
+      // The reference's side-row idle faces left, but both walking poses face right.
+      const sourceFacesRight = row === 1 && column > 0;
+      const flipX =
+        row === 1 &&
+        ((opts.dir === 'left' && sourceFacesRight) ||
+          (opts.dir === 'right' && !sourceFacesRight));
+      if (
+        drawWalkSheetFrame(ctx, walkSheet, row * 3 + column, cx, cy, 35, {
+          bobY: bob,
+          flipX,
+          tiltRad: opts.tiltRad,
+        })
+      ) return;
+    }
+  }
 
   // Select approved high-resolution transparent skin for direction & situational emotion
   let skinUrl: string = SKIN_URLS.graziFront;
@@ -848,13 +1030,10 @@ export function drawGraziSprite(
 
   const hiRes = getSkinSprite(skinUrl);
   if (hiRes) {
-    const walkTilt = opts.isMoving ? swing * 0.045 : 0;
     const danceTilt = opts.isDancing ? Math.sin((opts.dancePhase ?? 0) * 0.5) * 0.04 : 0;
-    const scaleY = opts.isMoving ? 1 + Math.abs(swing) * 0.025 : 1;
     drawSkinImage(ctx, hiRes, cx, cy + bob, 35, {
       flipX,
-      tiltRad: (opts.tiltRad ?? 0) + walkTilt + danceTilt,
-      scaleY,
+      tiltRad: (opts.tiltRad ?? 0) + danceTilt,
     });
     return;
   }
@@ -888,6 +1067,19 @@ export function drawGraziSprite(
   drawMatrix(ctx, cx, cy + bob, rows, GRAZI_PALETTE, `grazi32|down|${emo}|${strideKey}`);
 }
 
+export function drawGraziSpriteAtCoupleScale(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  opts: CharacterRenderOpts,
+): void {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(1, 36.5 / 35);
+  drawGraziSprite(ctx, 0, 0, opts);
+  ctx.restore();
+}
+
 export function drawLauraSprite(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -895,19 +1087,36 @@ export function drawLauraSprite(
   opts: CharacterRenderOpts,
 ): void {
   const swing = opts.isMoving ? Math.sin(opts.walkPhase ?? 0) : 0;
-  const bob = opts.isMoving ? Math.abs(Math.cos(opts.walkPhase ?? 0)) * -1.7 : 0;
+  const bob = opts.isMoving ? Math.abs(swing) * -1.2 : 0;
   drawShadow(ctx, cx, cy + 8, 9, 3.6);
 
   const isSide = opts.dir === 'left' || opts.dir === 'right';
+  if (opts.isMoving || opts.useWalkSheetForIdle) {
+    const walkSheet = getCharacterWalkSheetImage('laura');
+    if (walkSheet) {
+      const row = opts.dir === 'up' ? 2 : opts.dir === 'down' ? 0 : 1;
+      const column = opts.isMoving ? (swing > 0.35 ? 1 : swing < -0.35 ? 2 : 0) : 0;
+      const sourceFacesRight = row === 1 && column === 0;
+      const flipX =
+        row === 1 &&
+        ((opts.dir === 'left' && sourceFacesRight) ||
+          (opts.dir === 'right' && !sourceFacesRight));
+      if (
+        drawWalkSheetFrame(ctx, walkSheet, row * 3 + column, cx, cy, 35, {
+          bobY: bob,
+          flipX,
+          tiltRad: opts.tiltRad,
+        })
+      ) return;
+    }
+  }
+
   const skinUrl = isSide ? SKIN_URLS.lauraSide : SKIN_URLS.lauraFront;
   const hiRes = getSkinSprite(skinUrl);
   if (hiRes) {
-    const walkTilt = opts.isMoving ? swing * 0.045 : 0;
-    const scaleY = opts.isMoving ? 1 + Math.abs(swing) * 0.025 : 1;
     drawSkinImage(ctx, hiRes, cx, cy + bob, 35, {
       flipX: opts.dir === 'left',
-      tiltRad: (opts.tiltRad ?? 0) + walkTilt,
-      scaleY,
+      tiltRad: opts.tiltRad,
     });
     return;
   }
@@ -950,7 +1159,7 @@ export function drawArielSprite(
   const swing = opts.isMoving ? Math.sin(opts.walkPhase ?? 0) : 0;
   const kick = opts.cavaloKick ?? 0;
   const bob = opts.isMoving
-    ? Math.abs(Math.cos(opts.walkPhase ?? 0)) * -1.7
+    ? Math.abs(swing) * -1.2
     : opts.isDancing
       ? Math.sin(opts.dancePhase ?? 0) * -1.7
       : 0;
@@ -965,20 +1174,30 @@ export function drawArielSprite(
       ? SKIN_URLS.arielCapDance
       : SKIN_URLS.arielFront;
 
+  if (opts.isMoving || (opts.useWalkSheetForIdle && !opts.isDancing)) {
+    const walkSheet = getCharacterWalkSheetImage('ariel');
+    if (walkSheet) {
+      const row = opts.dir === 'up' ? 2 : opts.dir === 'down' ? 0 : 1;
+      const column = opts.isMoving ? (swing > 0.35 ? 1 : swing < -0.35 ? 2 : 0) : 0;
+      if (
+        drawWalkSheetFrame(ctx, walkSheet, row * 3 + column, cx + kick * 1.8, cy, 36.5, {
+          bobY: bob,
+          flipX: row === 1 && opts.dir === 'right',
+          tiltRad: opts.tiltRad,
+        })
+      ) return;
+    }
+  }
+
   const hiRes = getSkinSprite(skinUrl);
   if (hiRes) {
-    const walkTilt = opts.isMoving ? swing * 0.045 : 0;
     const danceTilt = opts.isDancing
       ? Math.sin((opts.dancePhase ?? 0) * 0.5) * 0.05 + kick * 0.055
       : 0;
-    const scaleY = opts.isMoving
-      ? 1 + Math.abs(swing) * 0.025
-      : opts.isDancing
-        ? 1 + Math.max(0, Math.sin(opts.dancePhase ?? 0)) * 0.03
-        : 1;
+    const scaleY = opts.isDancing ? 1 + Math.max(0, Math.sin(opts.dancePhase ?? 0)) * 0.03 : 1;
     drawSkinImage(ctx, hiRes, cx + kick * 1.8, cy + bob, 36.5, {
       flipX: opts.dir === 'left',
-      tiltRad: (opts.tiltRad ?? 0) + walkTilt + danceTilt,
+      tiltRad: (opts.tiltRad ?? 0) + danceTilt,
       scaleY,
     });
     return;
@@ -1394,23 +1613,81 @@ export function drawEloisaSprite(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
-  opts: { dir?: Direction; isMoving?: boolean; walkPhase?: number } = {},
+  opts: {
+    dir?: Direction;
+    isMoving?: boolean;
+    useWalkSheetForIdle?: boolean;
+    walkPhase?: number;
+  } = {},
 ): void {
   const swing = opts.isMoving ? Math.sin(opts.walkPhase ?? 0) : 0;
   const bob = opts.isMoving ? Math.abs(Math.cos(opts.walkPhase ?? 0)) * -1.5 : 0;
   drawShadow(ctx, cx, cy + 8, 8.8, 3.5);
 
+  if (opts.isMoving || opts.useWalkSheetForIdle) {
+    const walkSheet = getCharacterWalkSheetImage('eloisa');
+    if (walkSheet) {
+      const row = opts.dir === 'up' ? 2 : opts.dir === 'down' ? 0 : 1;
+      const column = opts.isMoving ? (swing > 0.35 ? 1 : swing < -0.35 ? 2 : 0) : 0;
+      if (
+        drawWalkSheetFrame(ctx, walkSheet, row * 3 + column, cx, cy, 34.5, {
+          bobY: bob,
+          flipX: row === 1 && opts.dir === 'left',
+        })
+      ) return;
+    }
+  }
+
   const hiRes = getSkinSprite(SKIN_URLS.eloisaFront);
   if (hiRes) {
     drawSkinImage(ctx, hiRes, cx, cy + bob, 34.5, {
       flipX: opts.dir === 'left',
-      tiltRad: opts.isMoving ? swing * 0.04 : 0,
-      scaleY: opts.isMoving ? 1 + Math.abs(swing) * 0.022 : 1,
     });
     return;
   }
 
   drawPatronSprite(ctx, cx, cy + bob, 0, opts.dir ?? 'down', opts.walkPhase ?? 0, Boolean(opts.isMoving));
+}
+
+export function drawArielEloisaWalkTogether(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  walkPhase: number,
+  isWalking: boolean,
+  dir: Direction = 'left',
+): void {
+  const walkSheet = getCharacterWalkSheetImage('arielEloisa');
+  if (walkSheet) {
+    const row = dir === 'up' ? 2 : dir === 'down' ? 0 : 1;
+    const swing = isWalking ? Math.sin(walkPhase) : 0;
+    const column = isWalking ? (swing > 0.35 ? 1 : swing < -0.35 ? 2 : 0) : 0;
+    const bobY = isWalking ? Math.abs(swing) * -1.2 : Math.sin(walkPhase * 0.5) * 0.35;
+
+    drawShadow(ctx, cx, cy + 9, 17, 4.4);
+    if (
+      drawWalkSheetFrame(ctx, walkSheet, row * 3 + column, cx, cy, 36.5, {
+        bobY,
+        flipX: row === 1 && dir === 'left',
+      })
+    ) {
+      return;
+    }
+  }
+
+  const gap = 9;
+  drawArielSprite(ctx, cx - gap, cy, {
+    dir,
+    isMoving: isWalking,
+    useWalkSheetForIdle: true,
+    walkPhase,
+  });
+  drawEloisaSprite(ctx, cx + gap, cy, {
+    dir,
+    isMoving: isWalking,
+    useWalkSheetForIdle: true,
+    walkPhase: walkPhase + 0.35,
+  });
 }
 
 export function drawArielJealousSprite(
@@ -2003,20 +2280,40 @@ export function drawLeoSprite(
     dir?: Direction;
     walkDist?: number;
     isMoving?: boolean;
+    useWalkSheetForIdle?: boolean;
     bobPhase?: number;
   } = {},
 ): void {
-  const { dir = 'down', walkDist = 0, isMoving = false, bobPhase = 0 } = options;
+  const {
+    dir = 'down',
+    walkDist = 0,
+    isMoving = false,
+    useWalkSheetForIdle = false,
+    bobPhase = 0,
+  } = options;
   const sprite = getSkinSprite(SKIN_URLS.leoFront);
   const walkSin = isMoving ? Math.sin(walkDist * 0.24) : 0;
   const bob = isMoving ? -Math.abs(walkSin) * 1.4 : Math.sin(bobPhase) * 0.5;
 
   drawShadow(ctx, cx, cy + 9, 8.2, 3.0);
 
+  if (isMoving || useWalkSheetForIdle) {
+    const walkSheet = getCharacterWalkSheetImage('leo');
+    if (walkSheet) {
+      const row = dir === 'up' ? 2 : dir === 'down' ? 0 : 1;
+      const column = isMoving ? (walkSin > 0.35 ? 1 : walkSin < -0.35 ? 2 : 0) : 0;
+      if (
+        drawWalkSheetFrame(ctx, walkSheet, row * 3 + column, cx, cy, 33.5, {
+          bobY: bob,
+          flipX: row === 1 && dir === 'right',
+        })
+      ) return;
+    }
+  }
+
   if (sprite) {
     drawSkinImage(ctx, sprite, cx, cy + bob, 33.5, {
       flipX: dir === 'left',
-      tiltRad: isMoving ? walkSin * 0.03 : 0,
     });
     return;
   }
@@ -2053,7 +2350,6 @@ export function drawArielCarryBoxSprite(
   if (sprite) {
     drawSkinImage(ctx, sprite, cx, cy + bob, 34.5, {
       flipX: facingLeft,
-      tiltRad: step * 0.025,
     });
     return;
   }
@@ -2081,7 +2377,6 @@ export function drawLeoCarryBoxSprite(
   if (sprite) {
     drawSkinImage(ctx, sprite, cx, cy + bob, 34.5, {
       flipX: facingLeft,
-      tiltRad: step * 0.025,
     });
     return;
   }
@@ -2096,22 +2391,65 @@ export function drawGraziArielWalkTogether(
   cy: number,
   walkPhase: number,
   isWalking = true,
+  dir?: Direction,
 ): void {
-  const sprite = getSkinSprite(SKIN_URLS.graziArielWalkTogether);
   const step = isWalking ? Math.sin(walkPhase) : Math.sin(walkPhase * 0.5) * 0.35;
   const bob = isWalking ? -Math.abs(step) * 1.3 : Math.sin(walkPhase) * 0.4;
+  const facing = dir ?? 'right';
 
-  drawShadow(ctx, cx, cy + 9.5, 16.5, 4.4);
+  if (isWalking && (facing === 'left' || facing === 'right')) {
+    const walkSheet = getCharacterWalkSheetImage('graziAriel');
+    const framePosition = ((Math.floor(walkPhase / (Math.PI / 2)) % 4) + 4) % 4;
+    const sequence =
+      facing === 'left'
+        ? GRAZI_ARIEL_WALK_FRAME_SEQUENCES.left
+        : GRAZI_ARIEL_WALK_FRAME_SEQUENCES.right;
+    const frameIndex = sequence[framePosition];
 
-  if (sprite) {
-    drawSkinImage(ctx, sprite, cx, cy + bob, 37.5, {
-      tiltRad: isWalking ? step * 0.015 : 0,
-    });
-    return;
+    if (walkSheet) {
+      drawShadow(ctx, cx, cy + 9.5, 16.5, 4.4);
+      if (drawWalkSheetFrame(ctx, walkSheet, frameIndex, cx, cy, 36.5, { bobY: bob })) {
+        return;
+      }
+    }
+  } else if (!isWalking && (facing === 'left' || facing === 'right')) {
+    const walkSheet = getCharacterWalkSheetImage('graziAriel');
+    const idleFrame =
+      facing === 'left'
+        ? GRAZI_ARIEL_WALK_FRAME_SEQUENCES.left[0]
+        : GRAZI_ARIEL_WALK_FRAME_SEQUENCES.right[0];
+    if (walkSheet) {
+      drawShadow(ctx, cx, cy + 9.5, 16.5, 4.4);
+      if (drawWalkSheetFrame(ctx, walkSheet, idleFrame, cx, cy, 36.5)) {
+        return;
+      }
+    } else {
+      const sprite = getSkinSprite(SKIN_URLS.graziArielWalkTogether);
+      if (sprite) {
+        drawShadow(ctx, cx, cy + 9.5, 16.5, 4.4);
+        drawSkinImage(ctx, sprite, cx, cy + bob, 36.5);
+        return;
+      }
+    }
   }
 
-  drawGraziSprite(ctx, cx - 14, cy + bob, { dir: 'down', emotion: 'happy' });
-  drawArielSprite(ctx, cx + 14, cy + bob, { dir: 'down' });
+  const facesLeft = facing === 'left';
+  const graziX = cx + (facesLeft ? -12.5 : 12.5);
+  const arielX = cx + (facesLeft ? 12.5 : -12.5);
+  drawGraziSpriteAtCoupleScale(ctx, graziX, cy + bob, {
+    dir: facing,
+    isMoving: isWalking,
+    walkPhase,
+    useWalkSheetForIdle: true,
+    emotion: 'happy',
+  });
+  drawArielSprite(ctx, arielX, cy + bob, {
+    dir: facing,
+    isMoving: isWalking,
+    walkPhase,
+    useWalkSheetForIdle: true,
+  });
+  drawCoupleJoinedHands(ctx, graziX, cy + bob, arielX, cy + bob);
 }
 
 export function drawHeldMovingBox(

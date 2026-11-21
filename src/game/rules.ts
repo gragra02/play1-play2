@@ -339,33 +339,36 @@ export function movePlayer(
   }
 
   const len = Math.hypot(inputX, inputY);
-  if (len < 0.01) {
-    if (!state.player.isMoving) return state;
-    return {
-      ...state,
-      player: { ...state.player, isMoving: false },
-    };
+  const nx = len > 0.01 ? inputX / len : 0;
+  const ny = len > 0.01 ? inputY / len : 0;
+  const targetVx = nx * PLAYER_SPEED;
+  const targetVy = ny * PLAYER_SPEED;
+  const currentVx = state.player.vx ?? 0;
+  const currentVy = state.player.vy ?? 0;
+  const responsiveness = len > 0.01 ? 10.5 : 14.5;
+  const blend = 1 - Math.exp(-responsiveness * dt);
+  let nextVx = currentVx + (targetVx - currentVx) * blend;
+  let nextVy = currentVy + (targetVy - currentVy) * blend;
+  if (len < 0.01 && Math.hypot(nextVx, nextVy) < 2) {
+    nextVx = 0;
+    nextVy = 0;
   }
-
-  const nx = inputX / len;
-  const ny = inputY / len;
-  const dist = PLAYER_SPEED * dt;
 
   let nextX = state.player.x;
   let nextY = state.player.y;
 
-  const tryX = nextX + nx * dist;
+  const tryX = nextX + nextVx * dt;
   if (canStandAt(tryX, nextY, state.player.width, state.player.height, state.npcs)) {
     nextX = tryX;
   }
 
-  const tryY = nextY + ny * dist;
+  const tryY = nextY + nextVy * dt;
   if (canStandAt(nextX, tryY, state.player.width, state.player.height, state.npcs)) {
     nextY = tryY;
   }
 
   const movedDist = Math.hypot(nextX - state.player.x, nextY - state.player.y);
-  const nextDir = directionFromVector(nx, ny, state.player.dir);
+  const nextDir = directionFromVector(nextVx, nextVy, state.player.dir);
 
   return {
     ...state,
@@ -374,6 +377,8 @@ export function movePlayer(
       x: nextX,
       y: nextY,
       dir: nextDir,
+      vx: nextVx,
+      vy: nextVy,
       isMoving: movedDist > 0.01,
       walkDistance: state.player.walkDistance + movedDist,
     },
@@ -1071,7 +1076,14 @@ export function startStage2EloisaCutscene(state: SimulationState): SimulationSta
         return { ...n, x: 16.5 * TILE_SIZE, y: 7.4 * TILE_SIZE, dir: 'left', visible: true, interactable: false };
       }
       if (n.role === 'eloisa') {
-        return { ...n, x: 17.5 * TILE_SIZE, y: 7.5 * TILE_SIZE, dir: 'left', visible: true, interactable: false };
+        return {
+          ...n,
+          x: 16.5 * TILE_SIZE + 26,
+          y: 7.5 * TILE_SIZE,
+          dir: 'left',
+          visible: true,
+          interactable: false,
+        };
       }
       return n;
     }),
