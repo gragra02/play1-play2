@@ -16,7 +16,6 @@ import djPortrait from '../assets/images/portrait_dj_cruzeiro_1795121199715.jpg'
 import friendPortrait from '../assets/images/portrait_friend_ariel_1795121288227.jpg';
 import vendorPortrait from '../assets/images/portrait_vendor_hotdog_1795121345592.jpg';
 import s4ArielAdultPortrait from '../assets/images/s4_ariel_adult_portrait_1795202451569.jpg';
-import s4BarManDrunkPortrait from '../assets/images/s4_bar_man_drunk_portrait.png';
 import s4CristianPortrait from '../assets/images/s4_cristian_portrait_1795202451565.jpg';
 import s4GraziAdultPortrait from '../assets/images/s4_grazi_adult_portrait_1795202462554.jpg';
 import s4NaniPortrait from '../assets/images/s4_nani_sprite_1795209660137.jpg';
@@ -48,7 +47,7 @@ export function getCharacterPortraitSrc(
   }
 
   if (speaker === 'bar_man') {
-    return s4BarManDrunkPortrait;
+    return vendorPortrait;
   }
 
   if (speaker === 'grazi' || speaker === 'grazi_thought') {

@@ -53,21 +53,15 @@ import npcVendorUrl from '../assets/images/npc_vendor_sprite_1795121208248.jpg';
 import s4ArielAdultUrl from '../assets/images/s4_ariel_adult_sprite_1795202479243.jpg';
 import s4Cristian5yoUrl from '../assets/images/s4_cristian_5yo_sprite_1795202486514.jpg';
 import s4Cristian7yoUrl from '../assets/images/s4_cristian_7yo_sprite_1795202453105.jpg';
-import s4CristianBabyWalkSheetUrl from '../assets/images/s4_cristian_baby_sleeping_walk_sheet.png';
 import s4CristianToddlerUrl from '../assets/images/s4_cristian_toddler_sprite_1795202457641.jpg';
 import s4GraziAdultUrl from '../assets/images/s4_grazi_adult_sprite_1795202450326.jpg';
-import s4BarManDrunkWalkSheetUrl from '../assets/images/s4_bar_man_drunk_walk_sheet.png';
-import s4GraziArielPregnantHandholdWalkSheetUrl from '../assets/images/s4_grazi_ariel_pregnant_handhold_walk_sheet.png';
 import s4GraziPregnantWalkSheetUrl from '../assets/images/s4_grazi_pregnant_walk_sheet_from_reference.png';
-import s4MotherInLawUrl from '../assets/images/s4_mother_in_law_sprite.png';
 import s4NaniUrl from '../assets/images/s4_nani_sprite_1795209660137.jpg';
 import {
   type ProcessedSprite,
   getCachedTransparentSprite,
   loadTransparentSprite,
 } from './spriteSheet';
-
-export const STAGE4_MOTHER_IN_LAW_SKIN_URL: string = s4MotherInLawUrl;
 
 export const SKIN_URLS = {
   graziFront: graziFrontUrl,
@@ -115,11 +109,10 @@ export const SKIN_URLS = {
   npcVendor: npcVendorUrl,
   npcClerk: npcClerkUrl,
 
-  // Stage 4: Nossa Pequena Grande Aventura (young-adult Ariel/Grazi, madrinha Nani + Cristian's growth stages)
+  // Stage 4: Nossa Pequena Grande Aventura (young-adult Ariel/Grazi, madrinha Nani + blond Cristian stages)
   s4ArielAdult: s4ArielAdultUrl,
   s4GraziAdult: s4GraziAdultUrl,
   s4Nani: s4NaniUrl,
-  s4MotherInLaw: s4MotherInLawUrl,
   s4CristianToddler: s4CristianToddlerUrl,
   s4Cristian5yo: s4Cristian5yoUrl,
   s4Cristian7yo: s4Cristian7yoUrl,
@@ -136,9 +129,6 @@ const WALK_SHEET_URLS = {
   arielEloisa: arielEloisaWalkSheetUrl,
   arielLauraCouple: arielLauraWalkSheetUrl,
   graziAriel: graziArielWalkSheetUrl,
-  barMan: s4BarManDrunkWalkSheetUrl,
-  s4PregnantCouple: s4GraziArielPregnantHandholdWalkSheetUrl,
-  s4CristianBaby: s4CristianBabyWalkSheetUrl,
   lauraLeoCouple: lauraLeoWalkTogetherUrl,
   leo: leoWalkSheetUrl,
 } as const;
@@ -199,9 +189,6 @@ export function preloadAllCharacterSkins(): void {
   getCharacterWalkSheetImage('arielEloisa');
   getCharacterWalkSheetImage('arielLauraCouple');
   getCharacterWalkSheetImage('graziAriel');
-  getCharacterWalkSheetImage('barMan');
-  getCharacterWalkSheetImage('s4PregnantCouple');
-  getCharacterWalkSheetImage('s4CristianBaby');
   getCharacterWalkSheetImage('lauraLeoCouple');
   getCharacterWalkSheetImage('leo');
   getS4GraziPregnantWalkSheetImage();
