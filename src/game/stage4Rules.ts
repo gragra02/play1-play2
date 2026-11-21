@@ -432,7 +432,7 @@ export function startStage4MaternityTrip(state: SimulationState): SimulationStat
       ...state.stage4,
       mapId: 'neighborhood_bike_road',
       locationLabel: 'A Caminho da Maternidade Carmela Dutra',
-      eraLabel: 'Com a Madrinha Nani',
+      eraLabel: 'Com Nani e a sogra do Ariel',
       cutscene: 'maternity_trip',
       cutsceneElapsed: 0,
       cameraFocusX: 11.2 * TILE_SIZE,
@@ -1589,11 +1589,11 @@ export function getStage4CutsceneCaption(state: SimulationState): Stage4Cutscene
   if (s4.cutscene === 'maternity_trip') {
     if (t < 4.4) {
       return {
-        badge: 'A CAMINHO DA MATERNIDADE · COM A MADRINHA NANI',
-        speaker: 'Madrinha Nani',
+        badge: 'A CAMINHO DA MATERNIDADE · COM NANI E A SOGRA',
+        speaker: 'Nani e a sogra do Ariel',
         speakerId: 'nani',
         emotion: 'happy',
-        text: 'A madrinha Nani chega de carro pronta para levar Grazi e Ariel. Com carinho e calma, os três embarcam juntos para o grande momento.',
+        text: 'Nani e a sogra do Ariel acompanham Grazi e Ariel com carinho até a maternidade.',
       };
     }
     if (t < 9.2) {
@@ -1602,7 +1602,7 @@ export function getStage4CutsceneCaption(state: SimulationState): Stage4Cutscene
         speaker: 'Grazi & Ariel',
         speakerId: 'grazi_adult',
         emotion: 'romantic',
-        text: 'Pela janela, o bairro vai ficando para trás enquanto a emoção e a expectativa boa crescem a cada quarteirão com Nani ao volante.',
+        text: 'No caminho, Nani e a sogra dividem com o casal a emoção de conhecer o bebê.',
       };
     }
     return {
@@ -1610,7 +1610,7 @@ export function getStage4CutsceneCaption(state: SimulationState): Stage4Cutscene
       speaker: 'Nani, Grazi & Ariel',
       speakerId: 'nani',
       emotion: 'happy',
-      text: 'Chegaram à Maternidade Carmela Dutra! Nani acompanha e apoia Grazi e Ariel na entrada — chegou a hora de conhecer Cristian.',
+      text: 'Nani e a sogra acompanham Grazi e Ariel até a entrada. Está quase na hora de conhecer Cris.',
     };
   }
 
@@ -1630,7 +1630,7 @@ export function getStage4CutsceneCaption(state: SimulationState): Stage4Cutscene
         speaker: 'Família de Três',
         speakerId: 'ariel_adult',
         emotion: 'romantic',
-        text: 'Nos braços de Grazi e Ariel, com a madrinha Nani celebrando por perto, o pequeno Cristian loirinho trouxe uma luz inteiramente nova para a vida deles.',
+        text: 'Nos braços de Grazi, Cris recebe o carinho de Ariel, Nani e da sogra do Ariel.',
       };
     }
     return {

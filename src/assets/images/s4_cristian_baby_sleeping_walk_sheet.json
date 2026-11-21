@@ -1,0 +1,105 @@
+{
+  "image": "s4_cristian_baby_sleeping_walk_sheet.png",
+  "columns": 3,
+  "rows": [
+    {
+      "direction": "sleeping",
+      "frames": [
+        "frame1",
+        "frame2",
+        "frame3"
+      ],
+      "available": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "direction": "sleeping",
+      "frames": [
+        "frame4",
+        "unused",
+        "unused"
+      ],
+      "available": [
+        true,
+        false,
+        false
+      ]
+    },
+    {
+      "direction": "unused",
+      "frames": [
+        "unused",
+        "unused",
+        "unused"
+      ],
+      "available": [
+        false,
+        false,
+        false
+      ]
+    }
+  ],
+  "cell": {
+    "width": 604,
+    "height": 755
+  },
+  "frameMap": [
+    {
+      "cell": 0,
+      "sourceComponent": 4,
+      "mirrored": false,
+      "available": true
+    },
+    {
+      "cell": 1,
+      "sourceComponent": 1,
+      "mirrored": false,
+      "available": true
+    },
+    {
+      "cell": 2,
+      "sourceComponent": 2,
+      "mirrored": false,
+      "available": true
+    },
+    {
+      "cell": 3,
+      "sourceComponent": 3,
+      "mirrored": false,
+      "available": true
+    },
+    {
+      "cell": 4,
+      "sourceComponent": null,
+      "mirrored": false,
+      "available": false
+    },
+    {
+      "cell": 5,
+      "sourceComponent": null,
+      "mirrored": false,
+      "available": false
+    },
+    {
+      "cell": 6,
+      "sourceComponent": null,
+      "mirrored": false,
+      "available": false
+    },
+    {
+      "cell": 7,
+      "sourceComponent": null,
+      "mirrored": false,
+      "available": false
+    },
+    {
+      "cell": 8,
+      "sourceComponent": null,
+      "mirrored": false,
+      "available": false
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 import {
   SKIN_URLS,
+  STAGE4_MOTHER_IN_LAW_SKIN_URL,
+  getCharacterWalkSheetImage,
   getS4GraziPregnantWalkSheetImage,
   getSkinSprite,
 } from './characterSkins';
@@ -10,6 +12,7 @@ import {
   OUTLINE,
   drawShadow,
   drawSkinImage,
+  drawWalkSheetFrame,
   getWalkSheetFrameBounds,
   px,
 } from './pixelArt';
@@ -30,8 +33,7 @@ import type { CristianAgeStage, Direction, SimulationState } from './types';
 
 // ============================================================================
 // STAGE 4 — NOSSA PEQUENA GRANDE AVENTURA (World, Cutscenes & Growth Renderer)
-// Young-adult short-haired Ariel, young-adult Grazi, and ALWAYS-BLOND Cristian
-// evolving naturally from newborn baby -> ~2-3y toddler -> ~5y -> ~7y.
+// Young-adult Ariel and Grazi, with Cristian evolving from newborn to ~7 years.
 // ============================================================================
 
 function drawAdultAriel(
@@ -270,6 +272,60 @@ function drawMadrinhaNani(
   ctx.fillRect(cx - 7, cy - 7, 14, 10);
 }
 
+function drawStage4MotherInLawMarker(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  opts: { scaleBoost?: number; bobY?: number; showPlaceholderLabel?: boolean } = {},
+): void {
+  const scale = opts.scaleBoost ?? 1;
+  const bobY = opts.bobY ?? 0;
+  const approvedSkinUrl = STAGE4_MOTHER_IN_LAW_SKIN_URL;
+  if (approvedSkinUrl) {
+    const sprite = getSkinSprite(approvedSkinUrl);
+    if (sprite) {
+      drawShadow(ctx, x, y + 6, 9.5 * scale, 3.8 * scale);
+      drawSkinImage(ctx, sprite, x, y + bobY, 48 * scale);
+      return;
+    }
+  }
+
+  drawShadow(ctx, x, y + 6, 9.5 * scale, 3.8 * scale);
+  ctx.save();
+  ctx.translate(px(x), px(y + bobY));
+  ctx.scale(scale, scale);
+  ctx.fillStyle = OUTLINE;
+  ctx.beginPath();
+  ctx.arc(0, -37, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#858b96';
+  ctx.beginPath();
+  ctx.arc(0, -37, 5.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = OUTLINE;
+  ctx.beginPath();
+  ctx.roundRect(-9, -29, 18, 27, 5);
+  ctx.fill();
+  ctx.fillStyle = '#a4a9b1';
+  ctx.beginPath();
+  ctx.roundRect(-7, -27, 14, 23, 4);
+  ctx.fill();
+  ctx.fillStyle = '#fff6df';
+  ctx.font = 'bold 13px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('?', 0, -12);
+  ctx.restore();
+
+  if (opts.showPlaceholderLabel && !approvedSkinUrl) {
+    ctx.save();
+    ctx.fillStyle = '#fff6df';
+    ctx.font = 'bold 8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SOGRA · SKIN PROVISÓRIA', px(x), px(y + 17));
+    ctx.restore();
+  }
+}
+
 function drawJoinedHands(
   ctx: CanvasRenderingContext2D,
   leftX: number,
@@ -305,6 +361,40 @@ function drawJoinedHands(
   ctx.arc(midX, handY + 1, 2.3, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+}
+
+function drawS4PregnantHandholdingCouple(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  y: number,
+  opts: {
+    facing: 'left' | 'right';
+    isMoving: boolean;
+    walkPhase: number;
+    bobY?: number;
+    scaleBoost?: number;
+  },
+): boolean {
+  const image = getCharacterWalkSheetImage('s4PregnantCouple');
+  if (!image) return false;
+
+  const scaleBoost = opts.scaleBoost ?? 1;
+  const rowOffset = opts.facing === 'left' ? 3 : 0;
+  const frameColumn = opts.isMoving
+    ? 1 + (Math.floor(opts.walkPhase / (Math.PI / 2)) % 2)
+    : 0;
+  const frameIndex = rowOffset + frameColumn;
+  if (!getWalkSheetFrameBounds(image)?.[frameIndex]) return false;
+
+  const bobY =
+    (opts.bobY ?? 0) +
+    (opts.isMoving ? Math.abs(Math.sin(opts.walkPhase)) * -1.6 * scaleBoost : 0);
+  drawShadow(ctx, centerX - 14 * scaleBoost, y + 6, 8 * scaleBoost, 3.6 * scaleBoost);
+  drawShadow(ctx, centerX + 14 * scaleBoost, y + 6, 8 * scaleBoost, 3.6 * scaleBoost);
+  return drawWalkSheetFrame(ctx, image, frameIndex, centerX, y, 48 * scaleBoost, {
+    bobY,
+    scaleX: 1.3,
+  });
 }
 
 function drawBlondCristian(
@@ -355,16 +445,64 @@ function drawBlondCristian(
   ctx.fillRect(cx - 7, cy - h + 19, 14, h - 22);
 }
 
-function drawNewbornBlondCristianBundle(
+function drawS4CristianBabySkin(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  t: number,
+  opts: {
+    targetHeight: number;
+    rotation?: number;
+    scaleX?: number;
+    bobY?: number;
+  },
+): boolean {
+  const image = getCharacterWalkSheetImage('s4CristianBaby');
+  if (!image) return false;
+
+  const frameIndex = Math.floor(Math.max(0, t) * 2.4) % 4;
+  if (!getWalkSheetFrameBounds(image)?.[frameIndex]) return false;
+
+  const drawH = opts.targetHeight * GLOBAL_CHAR_SCALE;
+  ctx.save();
+  ctx.translate(px(x), px(y + (opts.bobY ?? 0)));
+  if (opts.rotation) ctx.rotate(opts.rotation);
+  const drawn = drawWalkSheetFrame(ctx, image, frameIndex, 0, drawH / 2 - 8.5, opts.targetHeight, {
+    scaleX: opts.scaleX,
+  });
+  ctx.restore();
+  return drawn;
+}
+
+function drawNewbornCristianBundle(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   t: number,
 ): void {
   const rock = Math.sin(t * 2.4) * 1.1;
+  const rotation = -0.22 + Math.sin(t * 2.4) * 0.04;
+  if (
+    drawS4CristianBabySkin(ctx, x, y + rock, t, {
+      targetHeight: 20,
+      rotation,
+      scaleX: 1.15,
+    })
+  ) {
+    ctx.save();
+    ctx.translate(px(x), px(y + rock));
+    ctx.rotate(rotation);
+    ctx.fillStyle = '#ecc09b';
+    ctx.beginPath();
+    ctx.ellipse(2.5, 4.8, 3.4, 2.0, 0.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
   ctx.save();
   ctx.translate(px(x), px(y + rock));
-  ctx.rotate(-0.22 + Math.sin(t * 2.4) * 0.04);
+  ctx.rotate(rotation);
 
   // Cozy sky-blue & cream swaddle cradled naturally across Grazi's arms
   ctx.fillStyle = OUTLINE;
@@ -392,12 +530,12 @@ function drawNewbornBlondCristianBundle(
   ctx.arc(-4.5, -1.5, 4.8, 0, Math.PI * 2);
   ctx.fill();
 
-  // Golden-blond baby tuft (loirinho desde bebê!)
+  // Blond hair while the approved baby sprite is loading.
   ctx.fillStyle = '#f2c96b';
   ctx.beginPath();
   ctx.ellipse(-5.2, -5.2, 4.4, 2.2, -0.2, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = '#ffe599';
+  ctx.fillStyle = '#ffe596';
   ctx.fillRect(-7, -6.5, 3.5, 1.8);
 
   // Peaceful closed smiling eyes & rosy cheeks
@@ -423,11 +561,28 @@ function drawBarManSprite(
   y: number,
   t: number,
   met: boolean,
+  opts: { direction?: Direction; isMoving?: boolean } = {},
 ): void {
-  const bob = Math.sin(t * 2.2) * 0.9;
+  const direction = opts.direction ?? 'down';
+  const row = direction === 'up' ? 2 : direction === 'down' ? 0 : 1;
+  const frameColumn = opts.isMoving ? 1 + (Math.floor(t * 4) % 2) : row === 0 ? 1 : 0;
+  const bob = opts.isMoving ? Math.abs(Math.sin(t * 7.5)) * -1.6 : Math.sin(t * 2.2) * 0.9;
+  const walkSheet = getCharacterWalkSheetImage('barMan');
+  const flipX = row === 1 && direction === 'left';
   drawShadow(ctx, x, y + 6, 10, 3.8);
+  if (
+    walkSheet &&
+    drawWalkSheetFrame(ctx, walkSheet, row * 3 + frameColumn, x, y, 50, {
+      bobY: bob,
+      flipX,
+    })
+  ) {
+    if (met) drawMoodIcon(ctx, x, y - 66, 'smile');
+    return;
+  }
+
   const cx = px(x);
-  const cy = px(y + bob);
+  const cy = px(y + Math.sin(t * 2.2) * 0.9);
 
   // Shoes & trousers
   ctx.fillStyle = OUTLINE;
@@ -1288,7 +1443,7 @@ function drawNaniCar(
 
   // Front & rear cabin windows
   ctx.fillStyle = '#cfe8f2';
-  // Rear passenger window (Ariel & Grazi)
+  // Rear passenger window (Ariel, Grazi, and the temporary mother-in-law marker)
   ctx.beginPath();
   ctx.moveTo(-44, -31);
   ctx.lineTo(-28, -51);
@@ -1330,26 +1485,27 @@ function drawNaniCar(
     // Ariel (short dark hair, navy polo)
     ctx.fillStyle = '#2b1a12';
     ctx.beginPath();
-    ctx.arc(-28, -43, 5.5, 0, Math.PI * 2);
+    ctx.arc(-36, -43, 5.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#e2b18c';
     ctx.beginPath();
-    ctx.arc(-28, -42, 4.3, 0, Math.PI * 2);
+    ctx.arc(-36, -42, 4.3, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#2a4b7c';
-    ctx.fillRect(-34, -37, 12, 6);
+    ctx.fillRect(-42, -37, 12, 6);
 
     // Grazi (chestnut hair, cream top, excited smile)
     ctx.fillStyle = '#5c3622';
     ctx.beginPath();
-    ctx.arc(-13, -43, 6.0, 0, Math.PI * 2);
+    ctx.arc(-21, -43, 6.0, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#f0c4a0';
     ctx.beginPath();
-    ctx.arc(-13, -42, 4.4, 0, Math.PI * 2);
+    ctx.arc(-21, -42, 4.4, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#f3e5c7';
-    ctx.fillRect(-19, -37, 12, 6);
+    ctx.fillRect(-27, -37, 12, 6);
+    drawStage4MotherInLawMarker(ctx, -7, -40, { scaleBoost: 0.36 });
   }
 
   // Subtle window glass shine
@@ -1428,7 +1584,7 @@ function drawNaniCar(
 
 // ============================================================================
 // CRISTIAN'S PROPORTIONAL WOODEN BABY CRIB WITH PREDOMINANTLY YELLOW ENXOVAL,
-// GENTLY BREATHING SLEEPING BLOND BABY & TIO LÉO'S MINIATURE GIFT TOYS
+// GENTLY BREATHING SLEEPING BABY & TIO LÉO'S MINIATURE GIFT TOYS
 // Crib rail height (~64px) matches ~96px adults standing affectionately beside it!
 // ============================================================================
 function drawCristianYellowCrib(
@@ -1501,81 +1657,88 @@ function drawCristianYellowCrib(
   ctx.ellipse(left + 30, mattressY - 5, 11, 4.5, -0.06, 0, Math.PI * 2);
   ctx.fill();
 
-  // ---- SLEEPING BLOND NEWBORN CRISTIAN (gentle natural breathing & dreamy motion!) ----
+  // ---- SLEEPING NEWBORN CRISTIAN ----
   const breath = Math.sin(t * 1.65) * 1.6;
   const headNuzzle = Math.sin(t * 0.85) * 0.7;
   const handWiggle = Math.sin(t * 2.1) > 0.72 ? Math.sin(t * 8.4) * 1.1 : 0;
+  const babySkinDrawn = drawS4CristianBabySkin(
+    ctx,
+    left + 78 + headNuzzle,
+    mattressY - 20,
+    t,
+    {
+      targetHeight: 28,
+      rotation: -0.52,
+      scaleX: 1.6,
+      bobY: breath * 0.3,
+    },
+  );
+  const headX = left + (babySkinDrawn ? 61 : 35) + headNuzzle;
+  const headY = mattressY - (babySkinDrawn ? 26 : 8) + breath * 0.3;
 
-  // Baby Cristian's peaceful head resting on the yellow pillow
-  const headX = left + 35 + headNuzzle;
-  const headY = mattressY - 8 + breath * 0.3;
-  ctx.fillStyle = OUTLINE;
-  ctx.beginPath();
-  ctx.arc(headX, headY, 11.2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#f8d4b7';
-  ctx.beginPath();
-  ctx.arc(headX, headY, 9.6, 0, Math.PI * 2);
-  ctx.fill();
+  if (!babySkinDrawn) {
+    ctx.fillStyle = OUTLINE;
+    ctx.beginPath();
+    ctx.arc(headX, headY, 11.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f8d4b7';
+    ctx.beginPath();
+    ctx.arc(headX, headY, 9.6, 0, Math.PI * 2);
+    ctx.fill();
 
-  // Natural golden-BLOND baby hair tuft (loirinho desde bebê!)
-  ctx.fillStyle = '#f2c96b';
-  ctx.beginPath();
-  ctx.ellipse(headX - 2.5, headY - 7.5, 8.2, 4.0, -0.22, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#ffe99e';
-  ctx.beginPath();
-  ctx.ellipse(headX - 4.0, headY - 8.5, 4.8, 2.2, -0.25, 0, Math.PI * 2);
-  ctx.fill();
+    ctx.fillStyle = '#f2c96b';
+    ctx.beginPath();
+    ctx.ellipse(headX - 2.5, headY - 7.5, 8.2, 4.0, -0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffe99e';
+    ctx.beginPath();
+    ctx.ellipse(headX - 4.0, headY - 8.5, 4.8, 2.2, -0.25, 0, Math.PI * 2);
+    ctx.fill();
 
-  // Peaceful closed smiling sleeping eyes & rosy cheeks
-  ctx.strokeStyle = '#5a3520';
-  ctx.lineWidth = 1.4;
-  ctx.beginPath();
-  ctx.arc(headX - 2.6, headY - 0.5, 2.2, 0.15, Math.PI - 0.15);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(headX + 4.2, headY - 0.5, 2.2, 0.15, Math.PI - 0.15);
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(244, 146, 160, 0.78)';
-  ctx.beginPath();
-  ctx.ellipse(headX - 4.4, headY + 2.4, 2.4, 1.4, 0, 0, Math.PI * 2);
-  ctx.ellipse(headX + 5.6, headY + 2.4, 2.4, 1.4, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // Tiny peaceful smile
-  ctx.fillStyle = '#a86452';
-  ctx.fillRect(px(headX + 0.2), px(headY + 3.6), 2.5, 1.2);
+    ctx.strokeStyle = '#5a3520';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(headX - 2.6, headY - 0.5, 2.2, 0.15, Math.PI - 0.15);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(headX + 4.2, headY - 0.5, 2.2, 0.15, Math.PI - 0.15);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(244, 146, 160, 0.78)';
+    ctx.beginPath();
+    ctx.ellipse(headX - 4.4, headY + 2.4, 2.4, 1.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(headX + 5.6, headY + 2.4, 2.4, 1.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#a86452';
+    ctx.fillRect(px(headX + 0.2), px(headY + 3.6), 2.5, 1.2);
 
-  // Cozy golden-yellow knitted baby blanket rising & falling softly with Cristian's breathing!
-  ctx.fillStyle = OUTLINE;
-  ctx.beginPath();
-  ctx.roundRect(left + 43, mattressY - 12 - breath, 72, 23 + breath, 10);
-  ctx.fill();
-  ctx.fillStyle = '#facc15';
-  ctx.beginPath();
-  ctx.roundRect(left + 45, mattressY - 10 - breath, 68, 19 + breath, 8);
-  ctx.fill();
-  // Lighter sunny-yellow blanket fold & soft lace trim near baby's chin
-  ctx.fillStyle = '#fef08a';
-  ctx.beginPath();
-  ctx.roundRect(left + 45, mattressY - 10 - breath, 14, 18 + breath, 6);
-  ctx.fill();
-  ctx.fillStyle = '#fde047';
-  ctx.beginPath();
-  ctx.ellipse(left + 78, mattressY - 5 - breath, 24, 5.5, 0, 0, Math.PI * 2);
-  ctx.fill();
+    ctx.fillStyle = OUTLINE;
+    ctx.beginPath();
+    ctx.roundRect(left + 43, mattressY - 12 - breath, 72, 23 + breath, 10);
+    ctx.fill();
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.roundRect(left + 45, mattressY - 10 - breath, 68, 19 + breath, 8);
+    ctx.fill();
+    ctx.fillStyle = '#fef08a';
+    ctx.beginPath();
+    ctx.roundRect(left + 45, mattressY - 10 - breath, 14, 18 + breath, 6);
+    ctx.fill();
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.ellipse(left + 78, mattressY - 5 - breath, 24, 5.5, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-  // Tiny baby hand resting gently over the yellow blanket rim with occasional soft stir
-  const handX = left + 52 + handWiggle;
-  const handY = mattressY - 8 - breath;
-  ctx.fillStyle = OUTLINE;
-  ctx.beginPath();
-  ctx.arc(handX, handY, 3.6, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#f8d4b7';
-  ctx.beginPath();
-  ctx.arc(handX, handY, 2.5, 0, Math.PI * 2);
-  ctx.fill();
+    const handX = left + 52 + handWiggle;
+    const handY = mattressY - 8 - breath;
+    ctx.fillStyle = OUTLINE;
+    ctx.beginPath();
+    ctx.arc(handX, handY, 3.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f8d4b7';
+    ctx.beginPath();
+    ctx.arc(handX, handY, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   // ---- FRONT WOODEN CRIB RAIL & SLATS (baby clearly visible through & above slats!) ----
   // Lower wooden frame base & yellow crib skirt
@@ -2208,12 +2371,15 @@ export function renderStage4World(
       queue.push({
         y: barManY,
         draw: () => {
+          const barManDirection: Direction =
+            (t >= 3.6 && t < 5.6) || t >= 8.4 ? 'right' : 'down';
           drawBarManSprite(
             ctx,
             barManX,
             barManY + (bmWalking ? Math.abs(Math.sin(t * 7.5)) * -2 : 0),
             t,
             barManWave,
+            { direction: barManDirection, isMoving: bmWalking },
           );
           if (t >= 4.2 && t < 8.4) {
             drawSpeechTag(ctx, barManX, barManY - 72, 'Vai ser um meninão!');
@@ -2226,33 +2392,48 @@ export function renderStage4World(
       y: sideY,
       draw: () => {
         const shyBob = coupleFacingReact ? Math.sin(t * 3.2) * -0.8 : 0;
-        drawAdultAriel(ctx, arielX, sideY, {
-          dir: 'right',
-          isMoving: coupleMoving,
-          walkPhase,
-          bobY: shyBob,
-          embarrassed: coupleFacingReact,
-        });
-        drawAdultGrazi(ctx, graziX, sideY, {
-          dir: coupleFacingReact ? 'left' : 'right',
-          isMoving: coupleMoving,
-          walkPhase: walkPhase + 0.35,
-          pregnant: true,
-          pregnant9m: true,
-          usePregnantWalkSheet: true,
-          bobY: shyBob,
-        });
-        drawJoinedHands(
+        const coupleSpriteDrawn = drawS4PregnantHandholdingCouple(
           ctx,
-          arielX,
-          graziX,
-          sideY + shyBob * 0.5,
-          coupleMoving ? Math.sin(walkPhase) * 2.2 : 0,
+          coupleCenterX,
+          sideY,
+          {
+            facing: coupleFacingReact ? 'left' : 'right',
+            isMoving: coupleMoving,
+            walkPhase,
+            bobY: shyBob,
+          },
         );
+        if (!coupleSpriteDrawn) {
+          drawAdultAriel(ctx, arielX, sideY, {
+            dir: 'right',
+            isMoving: coupleMoving,
+            walkPhase,
+            bobY: shyBob,
+            embarrassed: coupleFacingReact,
+          });
+          drawAdultGrazi(ctx, graziX, sideY, {
+            dir: coupleFacingReact ? 'left' : 'right',
+            isMoving: coupleMoving,
+            walkPhase: walkPhase + 0.35,
+            pregnant: true,
+            pregnant9m: true,
+            usePregnantWalkSheet: true,
+            bobY: shyBob,
+          });
+          drawJoinedHands(
+            ctx,
+            arielX,
+            graziX,
+            sideY + shyBob * 0.5,
+            coupleMoving ? Math.sin(walkPhase) * 2.2 : 0,
+          );
+        }
 
         if (coupleFacingReact) {
-          drawSpeechTag(ctx, arielX, sideY - 86, '...');
-          drawMoodIcon(ctx, graziX + 6, sideY - 102, 'smile');
+          const reactionArielX = coupleSpriteDrawn ? coupleCenterX + 15 : arielX;
+          const reactionGraziX = coupleSpriteDrawn ? coupleCenterX - 15 : graziX;
+          drawSpeechTag(ctx, reactionArielX, sideY - 86, '...');
+          drawMoodIcon(ctx, reactionGraziX + 6, sideY - 102, 'smile');
         } else if (t >= 10.2) {
           drawMoodIcon(ctx, coupleCenterX, sideY - 86, 'heart');
         }
@@ -2292,23 +2473,34 @@ export function renderStage4World(
         const walkY = 9.4 * TILE_SIZE + walkP * 26;
         const naniX = 14.8 * TILE_SIZE - Math.max(0, t - 2.1) * 22;
         const naniY = 9.7 * TILE_SIZE + Math.max(0, t - 2.1) * 14;
+        const motherInLawProgress = Math.min(1, Math.max(0, (t - 1.6) / 1.4));
+        const motherInLawX = (16.5 - motherInLawProgress * 0.7) * TILE_SIZE;
+        const motherInLawY = 9.7 * TILE_SIZE + motherInLawProgress * 14;
 
         queue.push({
           y: walkY,
           draw: () => {
-            drawAdultAriel(ctx, arielX, walkY, {
-              dir: 'right',
-              isMoving: t < 2.5,
-              walkPhase: t * 7,
-            });
-            drawAdultGrazi(ctx, graziX, walkY, {
-              dir: 'right',
-              isMoving: t < 2.5,
-              walkPhase: t * 7 + 0.3,
-              pregnant: true,
-              pregnant9m: true,
-            });
-            drawJoinedHands(ctx, arielX, graziX, walkY, Math.sin(t * 7) * 2);
+            const coupleSpriteDrawn = drawS4PregnantHandholdingCouple(
+              ctx,
+              (arielX + graziX) / 2,
+              walkY,
+              { facing: 'right', isMoving: t < 2.5, walkPhase: t * 7 },
+            );
+            if (!coupleSpriteDrawn) {
+              drawAdultAriel(ctx, arielX, walkY, {
+                dir: 'right',
+                isMoving: t < 2.5,
+                walkPhase: t * 7,
+              });
+              drawAdultGrazi(ctx, graziX, walkY, {
+                dir: 'right',
+                isMoving: t < 2.5,
+                walkPhase: t * 7 + 0.3,
+                pregnant: true,
+                pregnant9m: true,
+              });
+              drawJoinedHands(ctx, arielX, graziX, walkY, Math.sin(t * 7) * 2);
+            }
             if (t < 2.2) {
               drawSpeechTag(ctx, graziX + 4, walkY - 84, 'Obrigada, Nani!');
             }
@@ -2324,14 +2516,28 @@ export function renderStage4World(
               walkPhase: t * 7,
               bobY: t < 2.1 ? Math.sin(t * 5) * -1.2 : 0,
             });
-            if (t < 2.2) {
+            if (t < 1.6) {
               drawSpeechTag(ctx, naniX, naniY - 84, 'Vamos pra maternidade!');
+            }
+          },
+        });
+
+        queue.push({
+          y: motherInLawY,
+          draw: () => {
+            drawStage4MotherInLawMarker(ctx, motherInLawX, motherInLawY, {
+              scaleBoost: 0.96,
+              bobY: motherInLawProgress > 0 ? Math.sin(t * 5) * -0.8 : 0,
+              showPlaceholderLabel: true,
+            });
+            if (t >= 1.6 && t < 3.0) {
+              drawSpeechTag(ctx, motherInLawX, motherInLawY - 84, 'Estamos com vocês!');
             }
           },
         });
       }
     } else if (t < 9.2) {
-      // Phase B: Smooth animated road trip — scrolling neighborhood scenery & car moving with Nani, Ariel & Grazi!
+      // Phase B: Smooth animated road trip with Nani driving and the couple plus mother-in-law inside.
       const roadT = t - 4.4;
       const carX = 11.4 * TILE_SIZE + Math.sin(roadT * 1.4) * 14;
       const carY = 10.85 * TILE_SIZE;
@@ -2380,45 +2586,72 @@ export function renderStage4World(
         const arielX = (10.6 + walkUpP * 0.45) * TILE_SIZE;
         const graziX = arielX + 27;
         const naniX = graziX + 30;
+        const motherInLawX = naniX + 34;
         const walking = walkUpP < 0.98;
 
         queue.push({
           y: groupY,
           draw: () => {
-            drawAdultAriel(ctx, arielX, groupY, {
-              dir: 'right',
-              isMoving: walking,
-              walkPhase: arrT * 6.5,
-              scaleBoost,
-            });
-            drawAdultGrazi(ctx, graziX, groupY, {
-              dir: 'right',
-              isMoving: walking,
-              walkPhase: arrT * 6.5 + 0.3,
-              pregnant: true,
-              pregnant9m: true,
-              scaleBoost,
-            });
-            drawJoinedHands(ctx, arielX, graziX, groupY, walking ? Math.sin(arrT * 6.5) * 1.8 : 0);
+            const coupleSpriteDrawn = drawS4PregnantHandholdingCouple(
+              ctx,
+              (arielX + graziX) / 2,
+              groupY,
+              {
+                facing: 'right',
+                isMoving: walking,
+                walkPhase: arrT * 6.5,
+                scaleBoost,
+              },
+            );
+            if (!coupleSpriteDrawn) {
+              drawAdultAriel(ctx, arielX, groupY, {
+                dir: 'right',
+                isMoving: walking,
+                walkPhase: arrT * 6.5,
+                scaleBoost,
+              });
+              drawAdultGrazi(ctx, graziX, groupY, {
+                dir: 'right',
+                isMoving: walking,
+                walkPhase: arrT * 6.5 + 0.3,
+                pregnant: true,
+                pregnant9m: true,
+                scaleBoost,
+              });
+              drawJoinedHands(
+                ctx,
+                arielX,
+                graziX,
+                groupY,
+                walking ? Math.sin(arrT * 6.5) * 1.8 : 0,
+              );
+            }
             drawMadrinhaNani(ctx, naniX, groupY + 2, {
               dir: 'left',
               isMoving: walking,
               walkPhase: arrT * 6.5 + 0.6,
               scaleBoost,
             });
+            drawStage4MotherInLawMarker(ctx, motherInLawX, groupY + 2, {
+              scaleBoost,
+              bobY: walking ? Math.abs(Math.sin(arrT * 6.5 + 0.9)) * -1.2 : 0,
+              showPlaceholderLabel: true,
+            });
             drawMoodIcon(ctx, graziX, groupY - 82, 'heart');
+            drawMoodIcon(ctx, motherInLawX, groupY - 82, 'smile');
             drawSpeechTag(ctx, naniX + 4, groupY - 82, 'Chegamos! Vai dar tudo certo!');
           },
         });
       }
     }
   } else if (s4.cutscene === 'birth_blessing') {
-    // Beat 5: Tender, calm, joyful arrival of newborn BLOND Cristian at Maternidade Carmela Dutra
+    // Beat 5: Tender, calm, joyful arrival of newborn Cristian at Maternidade Carmela Dutra
     // with Grazi holding baby Cristian, Ariel close beside, and Madrinha Nani celebrating warmly!
     const scaleBoost = 0.98;
     const gx = 10.6 * TILE_SIZE;
     const ax = 12.2 * TILE_SIZE;
     const nx = 14.0 * TILE_SIZE;
+    const motherInLawX = 15.2 * TILE_SIZE;
     const cy = 9.7 * TILE_SIZE;
     queue.push({
       y: cy,
@@ -2445,16 +2678,21 @@ export function renderStage4World(
           scaleBoost,
           bobY: Math.abs(Math.sin(t * 4.2)) * -2.2,
         });
-        // Newborn blond baby Cristian cradled snugly against Grazi's arms!
-        drawNewbornBlondCristianBundle(ctx, gx + 4.5, cy - 31, t);
+        drawStage4MotherInLawMarker(ctx, motherInLawX, cy + 2, {
+          scaleBoost,
+          showPlaceholderLabel: true,
+        });
+        // Newborn Cristian cradled snugly against Grazi's arms.
+        drawNewbornCristianBundle(ctx, gx + 4.5, cy - 31, t);
         drawMoodIcon(ctx, (gx + ax) / 2, cy - 86, 'heart');
         drawMoodIcon(ctx, nx, cy - 82, 'smile');
+        drawMoodIcon(ctx, motherInLawX, cy - 82, 'smile');
         drawSpeechTag(ctx, (gx + ax) / 2, cy - 102, 'Bem-vindo, Cristian!');
       },
     });
   } else if (s4.cutscene === 'cristian_crib') {
-    // Beat 6: Special Nursery Scene — Cristian's predominantly YELLOW crib, gently breathing sleeping
-    // blond newborn, Tio Léo's miniature gift toys, and Grazi & Ariel lovingly watching at exact room scale!
+    // Beat 6: Special Nursery Scene — Cristian's predominantly YELLOW crib, sleeping
+    // newborn, Tio Léo's miniature gift toys, and Grazi & Ariel lovingly watching at exact room scale!
     const roomScale = 1.24; // ~96px adults matching dresser top (~92px) & crib rail (~64px waist-height!)
     const cribCx = 11.2 * TILE_SIZE; // 358px centered squarely on the pastel yellow oval rug
     const cribFloorY = 12.25 * TILE_SIZE; // 392px

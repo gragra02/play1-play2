@@ -885,6 +885,7 @@ test('Stage 4 begins with the school bicycle pickup and pregnancy reveal before 
   assert.equal(sim.questPhase, 's4_cutscene_maternity_trip');
   assert.equal(sim.stage4?.cutscene, 'maternity_trip');
   assert.ok(sim.stage4?.unlockedMemories.includes('mem_s4_maternidade'));
+  assert.ok(getStage4CutsceneCaption(sim)?.text.includes('sogra do Ariel'));
 
   // Step through maternity road trip -> arrives at Maternidade Carmela Dutra map before birth
   sim = stepSimulationTimers(sim, 10.0);
@@ -920,6 +921,9 @@ test('Stage 4 begins with the school bicycle pickup and pregnancy reveal before 
     if (sim.activeDialogue?.id === 's4_crib_reflection') break;
   }
   assert.equal(sim.activeDialogue?.id, 's4_crib_reflection');
+  assert.ok(
+    STAGE_4_DIALOGUES.s4_crib_reflection.lines.every((line) => line.text.length < 75),
+  );
 
   // 5. ONLY AFTER Cristian is born & crib scene completes -> Build the backyard meia-água!
   while (sim.activeDialogue) sim = advanceDialogue(sim);

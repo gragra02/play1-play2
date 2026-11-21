@@ -1,0 +1,60 @@
+{
+  "image": "s4_grazi_ariel_pregnant_handhold_walk_sheet.png",
+  "columns": 3,
+  "rows": [
+    {
+      "direction": "right",
+      "frames": [
+        "idle",
+        "stepA",
+        "stepB"
+      ],
+      "available": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "direction": "left",
+      "frames": [
+        "idle",
+        "stepA",
+        "stepB"
+      ],
+      "available": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "direction": "unused",
+      "frames": [
+        "unused",
+        "unused",
+        "unused"
+      ],
+      "available": [
+        false,
+        false,
+        false
+      ]
+    }
+  ],
+  "cell": {
+    "width": 558,
+    "height": 787
+  },
+  "frameMap": [
+    { "cell": 0, "sourceComponent": 0, "mirrored": false, "available": true },
+    { "cell": 1, "sourceComponent": 1, "mirrored": false, "available": true },
+    { "cell": 2, "sourceComponent": 2, "mirrored": false, "available": true },
+    { "cell": 3, "sourceComponent": 3, "mirrored": false, "available": true },
+    { "cell": 4, "sourceComponent": 4, "mirrored": false, "available": true },
+    { "cell": 5, "sourceComponent": 5, "mirrored": false, "available": true },
+    { "cell": 6, "sourceComponent": null, "mirrored": false, "available": false },
+    { "cell": 7, "sourceComponent": null, "mirrored": false, "available": false },
+    { "cell": 8, "sourceComponent": null, "mirrored": false, "available": false }
+  ]
+}
