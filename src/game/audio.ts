@@ -8,6 +8,7 @@ class RetroAudioEngine {
   private musicTimer: number | null = null;
   private stepIdx = 0;
   private mode: MusicMode = 'off';
+  private musicVolumeScale = 1.0;
 
   private ensureContext(): AudioContext | null {
     if (typeof window === 'undefined' || this.muted) return null;
@@ -42,6 +43,10 @@ class RetroAudioEngine {
   public toggleMute(): boolean {
     this.setMuted(!this.muted);
     return this.muted;
+  }
+
+  public setMusicVolumeScale(scale: number): void {
+    this.musicVolumeScale = Math.max(0.05, Math.min(1.6, scale));
   }
 
   public setMusicMode(nextMode: MusicMode): void {
@@ -86,17 +91,17 @@ class RetroAudioEngine {
         const chord = slowChords[chordIdx];
 
         if (arpIdx === 0) {
-          this.playTone(chord[0] / 2, 1.45, 'sine', 0.048);
-          this.playTone(chord[1], 1.25, 'sine', 0.022);
-          this.playTone(chord[2], 1.25, 'sine', 0.018);
+          this.playTone(chord[0] / 2, 1.45, 'sine', 0.048 * this.musicVolumeScale);
+          this.playTone(chord[1], 1.25, 'sine', 0.022 * this.musicVolumeScale);
+          this.playTone(chord[2], 1.25, 'sine', 0.018 * this.musicVolumeScale);
         }
 
         const arpNote = chord[arpIdx];
-        this.playTone(arpNote * 2, 0.54, 'triangle', 0.022);
+        this.playTone(arpNote * 2, 0.54, 'triangle', 0.022 * this.musicVolumeScale);
 
         if (this.stepIdx % 2 === 0) {
           const melNote = slowMelody[(this.stepIdx / 2) % slowMelody.length];
-          this.playTone(melNote, 0.68, 'sine', 0.025);
+          this.playTone(melNote, 0.68, 'sine', 0.025 * this.musicVolumeScale);
         }
 
         this.stepIdx++;

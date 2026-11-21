@@ -20,12 +20,30 @@ import s4BarManDrunkPortrait from '../assets/images/s4_bar_man_drunk_portrait.pn
 import s4CristianPortrait from '../assets/images/s4_cristian_portrait_1795202451565.jpg';
 import s4GraziAdultPortrait from '../assets/images/s4_grazi_adult_portrait_1795202462554.jpg';
 import s4NaniPortrait from '../assets/images/s4_nani_sprite_1795209660137.jpg';
+import type { ResolvedCutscenePortraitKey } from '../game/cutscene';
 import type { CharacterEmotion, SpeakerId } from '../game/types';
 
 export const TITLE_PORTRAITS = {
   grazi: graziNeutral,
   ariel: arielNeutral,
 } as const;
+
+export function getCutscenePortraitSrc(
+  portraitKey: ResolvedCutscenePortraitKey,
+  speaker?: SpeakerId,
+  emotion?: CharacterEmotion,
+): string | null {
+  if (portraitKey === 's4_grazi_adult') return s4GraziAdultPortrait;
+  if (portraitKey === 's4_ariel_adult') return s4ArielAdultPortrait;
+  if (speaker === 'grazi' || speaker === 'grazi_thought' || speaker === 'grazi_adult') {
+    return s4GraziAdultPortrait;
+  }
+  if (speaker === 'ariel' || speaker === 'ariel_adult') {
+    return s4ArielAdultPortrait;
+  }
+  if (speaker) return getCharacterPortraitSrc(speaker, emotion);
+  return null;
+}
 
 export function getCharacterPortraitSrc(
   speaker: SpeakerId,

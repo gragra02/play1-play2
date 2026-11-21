@@ -181,11 +181,12 @@ export const STAGE_4_VIDEOGAME_PUZZLES: Stage4PuzzleChallenge[] = [
 ];
 
 export const STAGE4_BICYCLE_POS = { x: 7.2 * TILE_SIZE, y: 8.9 * TILE_SIZE };
-export const STAGE4_SCHOOL_BIKE_START_X = 704;
-export const STAGE4_SCHOOL_BIKE_STOP_X = 624;
+export const STAGE4_SCHOOL_BIKE_START_X = 978;
+export const STAGE4_SCHOOL_BIKE_STOP_X = 978;
 export const STAGE4_HOME_BIKE_DEST_X = 112;
 export const STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION = 1.5;
 export const STAGE4_BIKE_BOARD_DURATION = 1.5;
+export const STAGE4_SCHOOL_PICKUP_FADE_DURATION = 0.65;
 export const STAGE4_BUILD_SITE_POS = { x: 12.6 * TILE_SIZE, y: 8.9 * TILE_SIZE };
 export const STAGE4_BAR_MAN_POS = { x: 4.3 * TILE_SIZE, y: 8.6 * TILE_SIZE };
 export const STAGE4_STREET_CONTINUE_POS = { x: 19.6 * TILE_SIZE, y: 9.8 * TILE_SIZE };
@@ -280,9 +281,9 @@ export function createStage4Npcs(
   if (mapId === 'backyard_construction' || phase === 'construction') {
     return [
       {
-        id: 's4_ariel',
-        name: 'Ariel',
-        role: 'ariel',
+        id: 's4_grazi',
+        name: 'Grazi',
+        role: 'grazi',
         x: 13.8 * TILE_SIZE,
         y: 9.4 * TILE_SIZE,
         dir: 'left',
@@ -408,11 +409,11 @@ export const STAGE_4_DIALOGUES: Record<string, DialogueSequence> = {
       {
         id: 's4_ba_3',
         speaker: 'narrator',
-        speakerName: 'Os Meses Passaram na Casa da Mãe de Grazi',
-        text: 'A barriga cresceu mês a mês ainda na casa da mãe de Grazi — até chegar os nove meses e o dia mais esperado: a chegada do Cristian.',
+        speakerName: 'Fim da Aula',
+        text: 'Grazi atravessa o portão da escola. No fim da aula, Ariel volta para buscá-la.',
       },
     ],
-    onCompleteAction: 's4_start_labor_walk',
+    onCompleteAction: 's4_start_school_pickup',
   },
 
   s4_pregnancy_reveal: {
@@ -422,29 +423,29 @@ export const STAGE_4_DIALOGUES: Record<string, DialogueSequence> = {
         id: 's4_pr_1',
         speaker: 'grazi_adult',
         speakerName: 'Grazi',
-        text: 'Ariel, tenho uma coisa muito especial pra te contar... Eu estou grávida.',
-        emotion: 'thoughtful',
+        text: 'Ariel... preciso te contar uma coisa.',
+        emotion: 'blush',
       },
       {
         id: 's4_pr_2',
-        speaker: 'ariel_adult',
-        speakerName: 'Ariel',
-        text: 'Sério? A gente vai ter um bebê? Que notícia linda, Grazi!',
-        emotion: 'surprised',
+        speaker: 'grazi_adult',
+        speakerName: 'Grazi',
+        text: 'Nós vamos ser pai e mãe.',
+        emotion: 'romantic',
       },
       {
         id: 's4_pr_3',
         speaker: 'ariel_adult',
         speakerName: 'Ariel',
-        text: 'Estou muito feliz. Vamos viver essa aventura juntinhos, um passo de cada vez.',
-        emotion: 'romantic',
+        text: 'Sério...? Grazi... eu vou ser pai?',
+        emotion: 'surprised',
       },
       {
         id: 's4_pr_4',
-        speaker: 'grazi_adult',
-        speakerName: 'Grazi',
-        text: 'Eu sabia que você ia ficar feliz. Vai ser uma fase muito especial pra nós dois.',
-        emotion: 'happy',
+        speaker: 'ariel_adult',
+        speakerName: 'Ariel',
+        text: 'Eu te amo. Vocês dois vão ter tudo de mim.',
+        emotion: 'romantic',
       },
     ],
     onCompleteAction: 's4_start_labor_walk',
@@ -478,13 +479,13 @@ export const STAGE_4_DIALOGUES: Record<string, DialogueSequence> = {
         id: 's4_const_1',
         speaker: 'narrator',
         speakerName: 'Depois do Nascimento · Nos Fundos do Terreno',
-        text: 'Com Cristian já nascido, chegou a hora de construir a pequena casinha meia-água nos fundos do terreno da mãe de Grazi — o primeiro cantinho só da nova família.',
+        text: 'Com Cristian já nascido, chegou a hora de Ariel construir a pequena casinha meia-água nos fundos do terreno da mãe de Grazi — o primeiro cantinho só da nova família.',
       },
       {
         id: 's4_const_2',
         speaker: 'ariel_adult',
-        speakerName: 'Construindo Nossa Casinha',
-        text: 'Leve os materiais do quintal até o espaço da obra para acompanhar cada etapa da construção — do terreno vazio até a mudança para a casinha pronta.',
+        speakerName: 'Ariel · Construindo Nossa Casinha',
+        text: 'Controle Ariel para levar os materiais do quintal até o espaço da obra e levantar cada etapa da construção — do terreno vazio até a casinha pronta.',
         emotion: 'determined',
       },
     ],

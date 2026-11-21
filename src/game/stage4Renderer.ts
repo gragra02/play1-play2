@@ -26,9 +26,14 @@ import {
   STAGE4_BUILD_SITE_POS,
   STAGE4_CONSOLE_POS,
   STAGE4_RADIO_POS,
+  STAGE4_SCHOOL_PICKUP_FADE_DURATION,
   STAGE4_SCHOOL_BIKE_START_X,
   STAGE_4_MEMORIES,
 } from './stage4Data';
+import {
+  STAGE4_PREGNANCY_REVEAL_TIMELINE,
+  getCutsceneTimelineSnapshot,
+} from './cutscene';
 import type { CristianAgeStage, Direction, SimulationState } from './types';
 
 // ============================================================================
@@ -122,9 +127,11 @@ function drawAdultGrazi(
     4 * boost,
   );
 
-  const pregnantWalkSheet = opts.usePregnantWalkSheet
-    ? getS4GraziPregnantWalkSheetImage()
-    : null;
+  const isPregnant = Boolean(opts.pregnant || opts.pregnant9m);
+  const pregnantWalkSheet =
+    isPregnant && opts.usePregnantWalkSheet
+      ? getS4GraziPregnantWalkSheetImage()
+      : null;
   if (pregnantWalkSheet) {
     const direction = opts.dir ?? 'down';
     const row = direction === 'up' ? 2 : direction === 'down' ? 0 : 1;
@@ -1005,6 +1012,28 @@ function drawParkedBicycle(ctx: CanvasRenderingContext2D, x: number, y: number):
   ctx.fill();
 }
 
+function drawS4BicycleCoupleSkin(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  t: number,
+  physics?: {
+    pedalPhase: number;
+    facing: 'right' | 'left';
+    speed: number;
+  },
+): boolean {
+  const image = getCharacterWalkSheetImage('s4BicycleCouple');
+  if (!image) return false;
+
+  const facing = physics?.facing ?? 'left';
+  const phase = ((physics?.pedalPhase ?? t * 9) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+  const moving = (physics?.speed ?? 0) > 6;
+  const frameInCycle = moving ? Math.floor((phase / (Math.PI * 2)) * 3) : 0;
+  const directionOffset = facing === 'left' ? 3 : 0;
+  return drawWalkSheetFrame(ctx, image, directionOffset + frameInCycle, x, y + 7, 50);
+}
+
 function drawBicycleCouple(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -1018,7 +1047,7 @@ function drawBicycleCouple(
     speed: number;
   },
   passengerOnBike = true,
-  graziPregnant = true,
+  graziPregnant = false,
 ): void {
   const wheelAngle = physics ? physics.wheelAngle : t * 10;
   const pedalPhase = physics ? physics.pedalPhase : t * 9;
@@ -2093,7 +2122,10 @@ export function renderStage4World(
   const baseWorldW = MAP_COLS * TILE_SIZE;
   const worldH = MAP_ROWS * TILE_SIZE;
   const isBikeRide = mapId === 'neighborhood_bike_road' && Boolean(s4.bikeRide?.active);
-  const worldW = isBikeRide ? s4.bikeRide!.routeLength : baseWorldW;
+  const hasBikeRoute =
+    mapId === 'neighborhood_bike_road' &&
+    Boolean(s4.bikeRide && (s4.bikeRide.active || s4.cutscene === 'bicycle_ride'));
+  const worldW = hasBikeRoute ? s4.bikeRide!.routeLength : baseWorldW;
 
   const isCutscene = s4.cutscene !== 'none';
   const focusX = isBikeRide ? s4.cameraFocusX : isCutscene ? s4.cameraFocusX : sim.player.x;
@@ -2109,7 +2141,17 @@ export function renderStage4World(
   camX = Math.max(0, Math.min(Math.max(0, worldW - viewW / scale), camX));
   camY = Math.max(0, Math.min(Math.max(0, worldH - viewH / scale), camY));
 
-  ctx.fillStyle = mapId === 'meia_agua_interior' ? '#2c2420' : isBikeRide ? '#261e36' : '#3a5330';
+  if (s4.cutscene === 'pregnancy_reveal') {
+    const snap = getCutsceneTimelineSnapshot(STAGE4_PREGNANCY_REVEAL_TIMELINE, s4.cutsceneElapsed);
+    const shake = snap.step.effects.screenShake ?? 0;
+    if (shake > 0 && snap.stepElapsed < 1.1) {
+      const decay = 1 - snap.stepElapsed / 1.1;
+      camX += Math.sin(s4.cutsceneElapsed * 42) * shake * decay;
+      camY += Math.cos(s4.cutsceneElapsed * 36) * shake * 0.7 * decay;
+    }
+  }
+
+  ctx.fillStyle = mapId === 'meia_agua_interior' ? '#2c2420' : hasBikeRoute ? '#261e36' : '#3a5330';
   ctx.fillRect(0, 0, viewW, viewH);
 
   ctx.save();
@@ -2120,7 +2162,7 @@ export function renderStage4World(
   const isMaternityRoad = s4.cutscene === 'maternity_trip' && s4.cutsceneElapsed >= 4.4 && s4.cutsceneElapsed < 9.2;
   if (mapBackdrop) {
     ctx.imageSmoothingEnabled = false;
-    if (isBikeRide) {
+    if (hasBikeRoute) {
       // Seamless 2-block evening avenue: Block 1 mirrors srcX=0..0.518 at exact 1:1 scale
       // so srcX=0 meets srcX=0 pixel-for-pixel across sky, trees, intersection, curb & road!
       const seamX = 398;
@@ -2207,6 +2249,7 @@ export function renderStage4World(
     const unlockedSet = new Set(s4.unlockedMemories);
     for (const mem of STAGE_4_MEMORIES) {
       if (mem.mapId !== mapId || unlockedSet.has(mem.id)) continue;
+      if (mem.id === 'mem_s4_gravidez' && !s4.graziPregnant) continue;
       const pulse = 0.55 + 0.45 * Math.sin(sim.elapsedSeconds * 4.5 + mem.x * 0.05);
       ctx.fillStyle = `rgba(255, 218, 102, ${(0.25 * pulse).toFixed(2)})`;
       ctx.beginPath();
@@ -2228,8 +2271,8 @@ export function renderStage4World(
   const queue: Renderable[] = [];
   const t = s4.cutsceneElapsed;
 
-  if (s4.cutscene === 'pregnancy_news') {
-    // Beat 1: Animated pregnancy discovery in mom's yard — Ariel walks closer and holds Grazi's hand!
+  if (s4.cutscene === 'home_routine') {
+    // Neutral routine at the house before the playable school ride.
     const approachP = Math.min(1, t / 2.2);
     const gx = 10.7 * TILE_SIZE;
     const ax = (13.3 - approachP * 1.45) * TILE_SIZE;
@@ -2238,7 +2281,7 @@ export function renderStage4World(
     queue.push({
       y: cy,
       draw: () => {
-        drawAdultGrazi(ctx, gx, cy, { dir: 'right', pregnant: true, bobY: Math.sin(t * 2) * 0.7 });
+        drawAdultGrazi(ctx, gx, cy, { dir: 'right', pregnant: false, bobY: Math.sin(t * 2) * 0.7 });
         drawAdultAriel(ctx, ax, cy, {
           dir: 'left',
           isMoving: arielWalking,
@@ -2266,26 +2309,24 @@ export function renderStage4World(
       STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION + STAGE4_BIKE_BOARD_DURATION;
     const passengerOnBike = t >= boardedAt;
     const speed = bike ? Math.hypot(bike.vx, bike.vy) : 0;
+    const bikePhysics = bike
+      ? {
+          wheelAngle: bike.wheelAngle,
+          pedalPhase: bike.pedalPhase,
+          graziSway: bike.graziSway,
+          facing: bike.facing,
+          speed,
+        }
+      : undefined;
     queue.push({
       y: bikeY,
       draw: () => {
-        drawBicycleCouple(
-          ctx,
-          bikeX,
-          bikeY,
-          t,
-          bike
-            ? {
-                wheelAngle: bike.wheelAngle,
-                pedalPhase: bike.pedalPhase,
-                graziSway: bike.graziSway,
-                facing: bike.facing,
-                speed,
-              }
-            : undefined,
-          passengerOnBike,
-          false,
-        );
+        const referenceSkinDrawn =
+          passengerOnBike &&
+          drawS4BicycleCoupleSkin(ctx, bikeX, bikeY, t, bikePhysics);
+        if (!referenceSkinDrawn) {
+          drawBicycleCouple(ctx, bikeX, bikeY, t, bikePhysics, passengerOnBike, false);
+        }
 
         if (
           t >= STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION &&
@@ -2302,6 +2343,7 @@ export function renderStage4World(
             bikeY,
             {
               dir: 'left',
+              pregnant: false,
               isMoving: boardingProgress < 0.8,
               walkPhase: t * 7,
             },
@@ -2312,6 +2354,113 @@ export function renderStage4World(
         } else if (passengerOnBike && Math.sin(t * 3) > 0.2) {
           drawMoodIcon(ctx, bikeX - 8, bikeY - 78, 'heart');
         }
+      },
+    });
+  } else if (s4.cutscene === 'pregnancy_reveal') {
+    // CENA 2: Cinematic 8-step late-night pregnancy reveal on the veranda of Grazi's mom's house
+    // Strictly non-pregnant (graziPregnant: false), crisp pixel art, existing couple poses in Step 7/8.
+    const snap = getCutsceneTimelineSnapshot(STAGE4_PREGNANCY_REVEAL_TIMELINE, t);
+    const porchCenterX = 10.3 * TILE_SIZE;
+    const porchY = 9.65 * TILE_SIZE;
+    const arielX = porchCenterX - 20;
+    const graziX = porchCenterX + 20;
+
+    // Warm low-light late-night porch lamp glow
+    queue.push({
+      y: porchY - 40,
+      draw: () => {
+        const lampGlow = ctx.createRadialGradient(
+          porchCenterX,
+          porchY - 48,
+          6,
+          porchCenterX,
+          porchY - 20,
+          125,
+        );
+        lampGlow.addColorStop(0, 'rgba(255, 214, 132, 0.34)');
+        lampGlow.addColorStop(0.55, 'rgba(255, 184, 102, 0.14)');
+        lampGlow.addColorStop(1, 'rgba(255, 170, 90, 0)');
+        ctx.fillStyle = lampGlow;
+        ctx.beginPath();
+        ctx.arc(porchCenterX, porchY - 20, 125, 0, Math.PI * 2);
+        ctx.fill();
+      },
+    });
+
+    // Gentle rising golden fireflies in Steps 7 and 8
+    if (snap.step.effects.fireflies) {
+      queue.push({
+        y: porchY + 12,
+        draw: () => {
+          ctx.save();
+          ctx.imageSmoothingEnabled = false;
+          for (let i = 0; i < 14; i++) {
+            const seed = i * 19.7;
+            const cycle = (t * 0.42 + i * 0.17) % 1;
+            const fx = px(porchCenterX - 78 + ((i * 23) % 156) + Math.sin(t * 1.8 + seed) * 7);
+            const fy = px(porchY + 8 - cycle * 96);
+            const alpha = Math.sin(cycle * Math.PI) * 0.85;
+            ctx.fillStyle = `rgba(255, 232, 142, ${alpha.toFixed(2)})`;
+            ctx.fillRect(fx, fy, 2, 2);
+            ctx.fillStyle = `rgba(255, 248, 210, ${(alpha * 0.65).toFixed(2)})`;
+            ctx.fillRect(fx - 1, fy, 4, 1);
+          }
+          ctx.restore();
+        },
+      });
+    }
+
+    queue.push({
+      y: porchY,
+      draw: () => {
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+
+        const embraceSprite = getSkinSprite(SKIN_URLS.s4PregnancyEmbrace);
+        const isNodding =
+          snap.step.couplePose === 'nod_and_smile' && snap.stepElapsed >= 1.8;
+        const nodBob = isNodding ? Math.sin((snap.stepElapsed - 1.8) * 9) * 1.0 : 0;
+        const breatheBob = Math.sin(t * 1.8) * 0.45;
+
+        drawShadow(ctx, porchCenterX, porchY + 7, 15, 4.5);
+
+        if (embraceSprite) {
+          drawSkinImage(ctx, embraceSprite, porchCenterX, porchY + (nodBob || breatheBob), 50);
+        } else {
+          drawAdultAriel(ctx, arielX, porchY, {
+            dir: 'right',
+            bobY: breatheBob,
+          });
+          drawAdultGrazi(ctx, graziX, porchY, {
+            dir: 'left',
+            pregnant: false,
+            pregnant9m: false,
+            usePregnantWalkSheet: false,
+            bobY: nodBob || -breatheBob * 0.7,
+          });
+        }
+
+        // Step 4: Subtle eye sparkle catchlights during silent gaze exchange
+        if (snap.step.effects.windHair || snap.step.effects.eyeSparkle) {
+          ctx.fillStyle = '#fff9d6';
+          ctx.fillRect(px(porchCenterX - 3), px(porchY - 56), 2, 1);
+          ctx.fillRect(px(porchCenterX + 4), px(porchY - 53), 2, 1);
+        }
+
+        // Step 5: Subtle teary eye glint on Grazi
+        if (snap.step.effects.tearyEyes) {
+          ctx.fillStyle = '#cfe8ff';
+          ctx.fillRect(px(porchCenterX + 4), px(porchY - 52), 2, 2);
+        }
+
+        // Step 6: Affectionate smile icon when Grazi nods
+        if (isNodding) {
+          drawMoodIcon(ctx, porchCenterX + 10, porchY - 84, 'smile');
+        } else if (snap.step.couplePose === 'embrace_gaze_to_forehead') {
+          drawMoodIcon(ctx, porchCenterX, porchY - 86, 'heart');
+        }
+
+        ctx.restore();
       },
     });
   } else if (s4.cutscene === 'labor_walk_bar') {
@@ -2908,7 +3057,7 @@ export function renderStage4World(
           });
           drawAdultGrazi(ctx, bike.x + 48, curbY, {
             dir: 'left',
-            pregnant: true,
+            pregnant: false,
             bobY: Math.sin(sim.elapsedSeconds * 2.2 + 0.9) * 0.6,
           });
           drawMoodIcon(ctx, bike.x + 33, curbY - 78, 'heart');
@@ -2924,7 +3073,7 @@ export function renderStage4World(
             graziSway: bike.graziSway,
             facing: bike.facing,
             speed,
-          });
+          }, true, false);
           if (speed > 20 && Math.sin(sim.elapsedSeconds * 2.8) > 0.35) {
             drawMoodIcon(ctx, bike.x - 8, bike.y - 78, 'heart');
           }
@@ -2933,13 +3082,27 @@ export function renderStage4World(
     }
   } else {
     // Live Playable Exploration!
+    const isArielBuilder =
+      sim.questPhase === 's4_build_meia_agua' || mapId === 'backyard_construction';
     for (const npc of sim.npcs) {
       if (!npc.visible) continue;
       queue.push({
         y: npc.y,
         draw: () => {
-          if (npc.role === 'ariel') {
+          if (isArielBuilder && (npc.role === 'grazi' || npc.role === 'ariel')) {
+            drawAdultGrazi(ctx, npc.x, npc.y, {
+              dir: npc.dir,
+              pregnant: false,
+              usePregnantWalkSheet: false,
+            });
+          } else if (npc.role === 'ariel') {
             drawAdultAriel(ctx, npc.x, npc.y, { dir: npc.dir });
+          } else if (npc.role === 'grazi') {
+            drawAdultGrazi(ctx, npc.x, npc.y, {
+              dir: npc.dir,
+              pregnant: false,
+              usePregnantWalkSheet: false,
+            });
           } else if (npc.role === 'bar_man') {
             drawBarManSprite(ctx, npc.x, npc.y, sim.elapsedSeconds, s4.metBarMan);
             if (!s4.metBarMan) {
@@ -2961,21 +3124,29 @@ export function renderStage4World(
       });
     }
 
-    // Playable Young-Adult Grazi
+    // Playable Character: Ariel during Meia-Água construction, Grazi in all other exploration phases
     queue.push({
       y: sim.player.y,
       draw: () => {
-        drawAdultGrazi(ctx, sim.player.x, sim.player.y, {
-          dir: sim.player.dir,
-          walkPhase: sim.player.walkDistance * 0.11,
-          isMoving: sim.player.isMoving,
-          pregnant: s4.graziPregnant,
-          usePregnantWalkSheet: true,
-        });
+        if (isArielBuilder) {
+          drawAdultAriel(ctx, sim.player.x, sim.player.y, {
+            dir: sim.player.dir,
+            walkPhase: sim.player.walkDistance * 0.11,
+            isMoving: sim.player.isMoving,
+          });
+        } else {
+          drawAdultGrazi(ctx, sim.player.x, sim.player.y, {
+            dir: sim.player.dir,
+            walkPhase: sim.player.walkDistance * 0.11,
+            isMoving: sim.player.isMoving,
+            pregnant: s4.graziPregnant,
+            usePregnantWalkSheet: s4.graziPregnant,
+          });
+        }
 
-        // Carried construction material badge above Grazi when building the meia-água
+        // Carried construction material badge above Ariel when building the meia-água
         if (s4.carryingMaterialId) {
-          drawSpeechTag(ctx, sim.player.x, sim.player.y - 82, 'Levando material → Obra');
+          drawSpeechTag(ctx, sim.player.x, sim.player.y - 82, 'Ariel levando material → Obra');
         }
       },
     });
@@ -2991,8 +3162,18 @@ export function renderStage4World(
 
   // 5. Scene-Specific Atmospheric Glaze
   const glaze = ctx.createLinearGradient(0, 0, 0, viewH);
-  if (s4.cutscene === 'bicycle_ride' || isBikeRide) {
-    // Cozy warm twilight evening dusk glaze
+  if (s4.cutscene === 'bicycle_ride') {
+    // End-of-day return ride: darker than the playable ride to school.
+    glaze.addColorStop(0, 'rgba(20, 20, 48, 0.42)');
+    glaze.addColorStop(0.55, 'rgba(48, 38, 60, 0.18)');
+    glaze.addColorStop(1, 'rgba(10, 9, 28, 0.40)');
+  } else if (s4.cutscene === 'pregnancy_reveal') {
+    // Late-night warm low-light porch atmosphere
+    glaze.addColorStop(0, 'rgba(14, 12, 28, 0.52)');
+    glaze.addColorStop(0.5, 'rgba(54, 34, 24, 0.22)');
+    glaze.addColorStop(1, 'rgba(12, 9, 20, 0.54)');
+  } else if (isBikeRide) {
+    // Keep the playable ride's existing warm twilight appearance.
     glaze.addColorStop(0, 'rgba(34, 30, 74, 0.28)');
     glaze.addColorStop(0.55, 'rgba(255, 168, 96, 0.12)');
     glaze.addColorStop(1, 'rgba(22, 16, 40, 0.30)');
@@ -3026,9 +3207,51 @@ export function renderStage4World(
   ctx.fillStyle = glaze;
   ctx.fillRect(0, 0, viewW, viewH);
 
+  if (s4.cutscene === 'bicycle_ride' && t < STAGE4_SCHOOL_PICKUP_FADE_DURATION) {
+    const fadeAlpha = 1 - t / STAGE4_SCHOOL_PICKUP_FADE_DURATION;
+    ctx.fillStyle = `rgba(0, 0, 0, ${fadeAlpha.toFixed(2)})`;
+    ctx.fillRect(0, 0, viewW, viewH);
+  }
+
   if (s4.cutscene === 'labor_walk_bar' && t < 0.65) {
     const fadeAlpha = 1 - t / 0.65;
     ctx.fillStyle = `rgba(0, 0, 0, ${fadeAlpha.toFixed(2)})`;
     ctx.fillRect(0, 0, viewW, viewH);
+  }
+
+  if (s4.cutscene === 'pregnancy_reveal') {
+    const snap = getCutsceneTimelineSnapshot(STAGE4_PREGNANCY_REVEAL_TIMELINE, t);
+    const vigIntensity = snap.step.effects.vignetteIntensity ?? 0.48;
+    const vignette = ctx.createRadialGradient(
+      viewW / 2,
+      viewH / 2,
+      Math.min(viewW, viewH) * 0.28,
+      viewW / 2,
+      viewH / 2,
+      Math.max(viewW, viewH) * 0.72,
+    );
+    vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vignette.addColorStop(1, `rgba(8, 5, 12, ${vigIntensity.toFixed(2)})`);
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    // Step-to-step subtle fade & cinematic letterbox bars
+    if (snap.stepTransitionAlpha > 0.01) {
+      ctx.fillStyle = `rgba(8, 5, 10, ${snap.stepTransitionAlpha.toFixed(2)})`;
+      ctx.fillRect(0, 0, viewW, viewH);
+    }
+
+    if (snap.step.effects.letterbox) {
+      const barH = Math.max(28, Math.round(viewH * 0.085));
+      ctx.fillStyle = 'rgba(6, 4, 8, 0.92)';
+      ctx.fillRect(0, 0, viewW, barH);
+      ctx.fillRect(0, viewH - barH, viewW, barH);
+    }
+
+    // Scene boundary fade from black (Step 1) and fade to black (Step 8)
+    if (snap.fadeBlackAlpha > 0.01) {
+      ctx.fillStyle = `rgba(0, 0, 0, ${snap.fadeBlackAlpha.toFixed(2)})`;
+      ctx.fillRect(0, 0, viewW, viewH);
+    }
   }
 }

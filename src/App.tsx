@@ -56,11 +56,13 @@ import {
 import { renderStage4World } from './game/stage4Renderer';
 import {
   S4_BIKE_START_X,
+  advanceStage4PregnancyRevealCutscene,
   chooseStage4VideogameOption,
   createStage4Simulation,
   finishStage4Ending,
   getStage4CutsceneCaption,
   getStage4ObjectiveText,
+  getStage4PregnancyRevealSnapshot,
   isStage4CutsceneActive,
   startStage4BicycleRide,
   startStage4BirthCutscene,
@@ -70,6 +72,7 @@ import {
   startStage4Ending7y,
   startStage4LaborWalk,
   startStage4MaternityTrip,
+  startStage4PregnancyReveal,
   startStage4ToddlerHome,
   startStage4VideogameScene,
 } from './game/stage4Rules';
@@ -120,7 +123,8 @@ function getDesiredMusicMode(sim: SimulationState): MusicMode {
   }
   if (sim.stageId === 'stage-4' && sim.stage4) {
     if (
-      sim.stage4.cutscene === 'pregnancy_news' ||
+      sim.stage4.cutscene === 'home_routine' ||
+      sim.stage4.cutscene === 'pregnancy_reveal' ||
       sim.stage4.cutscene === 'birth_blessing' ||
       sim.stage4.cutscene === 'family_ending_7y'
     ) {
@@ -163,6 +167,7 @@ function buildHudSnapshot(sim: SimulationState): HudSnapshot {
     stage4EraLabel: sim.stageId === 'stage-4' ? sim.stage4?.eraLabel ?? null : null,
     stage4Cutscene: sim.stage4?.cutscene ?? 'none',
     stage4Caption: getStage4CutsceneCaption(sim),
+    stage4PregnancyReveal: getStage4PregnancyRevealSnapshot(sim),
     stage4BuildStage: sim.stage4?.buildStage ?? 0,
     stage4CarryingLabel:
       sim.stage4?.carryingMaterialId
@@ -215,6 +220,9 @@ function createSimulationFromQuery(
     if (!s4SceneParam || s4SceneParam === 'pregnancy') return sim;
     if (s4SceneParam === 'moms_house') {
       return { ...sim, activeDialogue: null };
+    }
+    if (s4SceneParam === 'pregnancy_reveal' || s4SceneParam === 'reveal') {
+      return startStage4PregnancyReveal(sim);
     }
     if (s4SceneParam === 'bicycle') {
       return startStage4BicycleRide(sim);
@@ -605,6 +613,10 @@ export default function App() {
       nextHud.stage4Cutscene,
       nextHud.stage4Caption?.text ?? '',
       nextHud.stage4Caption?.canFinishEnding ? 1 : 0,
+      nextHud.stage4PregnancyReveal?.stepIndex ?? -1,
+      nextHud.stage4PregnancyReveal?.visibleText.length ?? 0,
+      nextHud.stage4PregnancyReveal?.activePortraitKey ?? '',
+      nextHud.stage4PregnancyReveal?.canAdvanceNow ? 1 : 0,
       nextHud.stage4BuildStage,
       nextHud.stage4CarryingLabel ?? '',
       nextHud.stage4BikeActive ? 1 : 0,
@@ -761,7 +773,7 @@ export default function App() {
       sim.stage2?.cutscene === 'intro_memories' ||
       sim.stage2?.cutscene === 'breakdance_circle' ||
       sim.stage3?.cutscene === 'time_passage' ||
-      sim.stage4?.cutscene === 'pregnancy_news'
+      sim.stage4?.cutscene === 'home_routine'
     ) {
       handleSkipIntro();
       return;
@@ -807,13 +819,17 @@ export default function App() {
       return;
     }
 
-    if (
-      sim.questPhase === 'ariel_approaching' ||
-      sim.kissCutscene.active ||
-      isStage2CutsceneActive(sim) ||
-      isStage3CutsceneActive(sim) ||
-      isStage4CutsceneActive(sim)
-    ) {
+    if (sim.stage4?.cutscene === 'pregnancy_reveal') {
+      const nextSim = advanceStage4PregnancyRevealCutscene(sim);
+      if (nextSim !== sim) {
+        simRef.current = nextSim;
+        retroAudio.playInteract();
+        if (nextSim.stage4) {
+          persistUnlockedMemories(nextSim.stage4.unlockedMemories);
+        }
+        retroAudio.setMusicMode(getDesiredMusicMode(nextSim));
+        syncHudIfChanged(true);
+      }
       return;
     }
 
@@ -835,6 +851,16 @@ export default function App() {
         retroAudio.setMusicMode(getDesiredMusicMode(nextSim));
       }
       syncHudIfChanged(true);
+      return;
+    }
+
+    if (
+      sim.questPhase === 'ariel_approaching' ||
+      sim.kissCutscene.active ||
+      isStage2CutsceneActive(sim) ||
+      isStage3CutsceneActive(sim) ||
+      isStage4CutsceneActive(sim)
+    ) {
       return;
     }
 
@@ -1045,6 +1071,7 @@ export default function App() {
         const prevS3Cutscene = simRef.current.stage3?.cutscene ?? 'none';
         const prevS4Cutscene = simRef.current.stage4?.cutscene ?? 'none';
         const prevMusicMode = getDesiredMusicMode(simRef.current);
+        const prevRevealSnap = getStage4PregnancyRevealSnapshot(simRef.current);
 
         const keys = keysHeldRef.current;
         let ix = 0;
@@ -1061,6 +1088,40 @@ export default function App() {
         const nextMusicMode = getDesiredMusicMode(nextSim);
         if (prevMusicMode !== nextMusicMode) {
           retroAudio.setMusicMode(nextMusicMode);
+        }
+
+        if (nextSim.stageId === 'stage-4' && nextSim.stage4?.cutscene === 'pregnancy_reveal') {
+          const nextSnap = getStage4PregnancyRevealSnapshot(nextSim);
+          if (nextSnap) {
+            const dyn = nextSnap.step.effects.musicDynamic;
+            if (dyn === 'swell') {
+              retroAudio.setMusicVolumeScale(1.22);
+            } else if (dyn === 'fade_out') {
+              retroAudio.setMusicVolumeScale(Math.max(0.08, 1.0 - nextSnap.stepProgress * 0.92));
+            } else {
+              retroAudio.setMusicVolumeScale(0.75);
+            }
+            if (
+              nextSnap.activeSpeaker &&
+              nextSnap.visibleText.length > (prevRevealSnap?.visibleText.length ?? 0) &&
+              nextSnap.visibleText.length % 2 === 1
+            ) {
+              retroAudio.playSpeechBlip(nextSnap.activeSpeaker);
+            }
+            if (nextSnap.step.effects.fireflies && Math.random() < dt * 8) {
+              particlesRef.current.spawn(
+                'sparkle',
+                nextSim.stage4.cameraFocusX + (Math.random() - 0.5) * 140,
+                nextSim.stage4.cameraFocusY + 28 + (Math.random() - 0.5) * 24,
+                (Math.random() - 0.5) * 8,
+                -16 - Math.random() * 10,
+                1.6,
+                '#ffe28a',
+              );
+            }
+          }
+        } else {
+          retroAudio.setMusicVolumeScale(1.0);
         }
 
         if (
@@ -1090,7 +1151,7 @@ export default function App() {
           nextSim.stage3?.cutscene === 'moving_proposal' ||
           nextSim.stage3?.cutscene === 'together_montage' ||
           nextSim.stage3?.cutscene === 'ending_together' ||
-          nextSim.stage4?.cutscene === 'pregnancy_news' ||
+          nextSim.stage4?.cutscene === 'home_routine' ||
           nextSim.stage4?.cutscene === 'birth_blessing' ||
           nextSim.stage4?.cutscene === 'cristian_dance' ||
           nextSim.stage4?.cutscene === 'family_ending_7y';

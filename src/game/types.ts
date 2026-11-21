@@ -46,10 +46,11 @@ export type QuestPhase =
   | 's3_cutscene_proposal'
   | 's3_ending_together'
   // Stage 4: Nossa Pequena Grande Aventura (Pregnancy to Cristian ~7 years old)
-  | 's4_intro_pregnancy'
+  | 's4_intro_home_routine'
   | 's4_explore_moms_house'
   | 's4_ride_bicycle'
   | 's4_cutscene_bicycle'
+  | 's4_cutscene_pregnancy_reveal'
   | 's4_explore_labor_walk'
   | 's4_cutscene_labor_walk'
   | 's4_cutscene_maternity_trip'
@@ -136,6 +137,7 @@ export interface DialogueSequence {
     | 's3_start_ending_cutscene'
     | 's3_complete_stage'
     | 's4_start_bicycle_cutscene'
+    | 's4_start_school_pickup'
     | 's4_start_labor_walk'
     | 's4_start_maternity_trip'
     | 's4_start_birth_cutscene'
@@ -194,6 +196,7 @@ export interface PlayerState {
 }
 
 export type NpcRole =
+  | 'grazi'
   | 'laura'
   | 'ariel'
   | 'leo'
@@ -389,8 +392,9 @@ export type Stage4MapId =
 
 export type Stage4CutsceneKind =
   | 'none'
-  | 'pregnancy_news'
+  | 'home_routine'
   | 'bicycle_ride'
+  | 'pregnancy_reveal'
   | 'labor_walk_bar'
   | 'maternity_trip'
   | 'birth_blessing'

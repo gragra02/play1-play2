@@ -1944,14 +1944,16 @@ export function getObjectiveText(
       return 'Um momento especial depois da mudança...';
     case 's3_ending_together':
       return 'Dessa vez, pra ficar...';
-    case 's4_intro_pregnancy':
-      return 'Aos 19 anos · A descoberta da gravidez de Cristian';
+    case 's4_intro_home_routine':
+      return 'A rotina do casal na casa da mãe de Grazi';
     case 's4_explore_moms_house':
       return 'Explore o quintal e vá até a bicicleta com Ariel';
     case 's4_ride_bicycle':
       return 'Pedale de bicicleta com Grazi na garupa até o Ponto de Ônibus / Escola';
     case 's4_cutscene_bicycle':
       return 'Ariel levando Grazi de bicicleta até a aula da noite';
+    case 's4_cutscene_pregnancy_reveal':
+      return 'Em frente à casa da mãe de Grazi · Uma revelação emocionante';
     case 's4_explore_labor_walk':
     case 's4_cutscene_labor_walk':
       return 'Caminhando de mãos dadas pela rua do bairro aos 9 meses de gestação';

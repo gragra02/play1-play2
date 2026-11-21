@@ -1,5 +1,12 @@
 import { TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from './mapData';
 import {
+  S4_PREGNANCY_REVEAL_TOTAL_DURATION,
+  STAGE4_PREGNANCY_REVEAL_TIMELINE,
+  advanceTimelineElapsed,
+  getCutsceneTimelineSnapshot,
+  type CutsceneTimelineSnapshot,
+} from './cutscene';
+import {
   STAGE4_BAR_MAN_POS,
   STAGE4_BICYCLE_POS,
   STAGE4_BUILD_SITE_POS,
@@ -45,8 +52,8 @@ export const S4_BIKE_DEST_X = 978; // Right between covered Bus Stop & Escola Es
 export const S4_BIKE_MAX_SPEED_X = 136;
 export const S4_BIKE_MAX_SPEED_Y = 76;
 
-export const S4_PREGNANCY_DURATION = 9.0;
-export const S4_BICYCLE_DURATION = 9.5;
+export const S4_HOME_ROUTINE_DURATION = 9.0;
+export const S4_BICYCLE_DURATION = 10.2;
 export const S4_LABOR_WALK_DURATION = 13.2;
 export const S4_MATERNITY_TRIP_DURATION = 14.4;
 export const S4_BIRTH_DURATION = 9.5;
@@ -111,7 +118,7 @@ export function createStage4Simulation(
     cameraFocusX: 11.4 * TILE_SIZE,
     cameraFocusY: 9.0 * TILE_SIZE,
     cameraZoom: 1.0,
-    graziPregnant: skipIntro,
+    graziPregnant: false,
     cristianAge: 'unborn',
     bikeRide: null,
     buildStage: 0,
@@ -131,7 +138,7 @@ export function createStage4Simulation(
 
   const state: SimulationState = {
     stageId: 'stage-4',
-    questPhase: skipIntro ? 's4_explore_moms_house' : 's4_cutscene_bicycle',
+    questPhase: skipIntro ? 's4_explore_moms_house' : 's4_ride_bicycle',
     intro: createDoneIntro(),
     arielActivity: 'standing',
     player: {
@@ -158,7 +165,7 @@ export function createStage4Simulation(
     discoveredProps: [],
     heartsSpawned: 0,
   };
-  return skipIntro ? state : startStage4SchoolPickupCutscene(state);
+  return skipIntro ? state : startStage4BicycleRide(state);
 }
 
 export function startStage4SchoolPickupCutscene(state: SimulationState): SimulationState {
@@ -169,8 +176,8 @@ export function startStage4SchoolPickupCutscene(state: SimulationState): Simulat
     stage4: {
       ...state.stage4,
       mapId: 'neighborhood_bike_road',
-      locationLabel: 'Escola · Saída para casa',
-      eraLabel: 'A volta da escola de bicicleta',
+      locationLabel: 'Escola Estadual · Portão',
+      eraLabel: 'Fim da aula · Volta para casa',
       cutscene: 'bicycle_ride',
       cutsceneElapsed: 0,
       cameraFocusX: STAGE4_SCHOOL_BIKE_START_X,
@@ -188,7 +195,7 @@ export function startStage4SchoolPickupCutscene(state: SimulationState): Simulat
         wheelAngle: 0,
         pedalPhase: 0,
         graziSway: 0,
-        routeLength: WORLD_WIDTH,
+        routeLength: S4_BIKE_ROUTE_WIDTH,
         destinationX: STAGE4_HOME_BIKE_DEST_X,
         arrived: false,
         farewellDialogueTriggered: false,
@@ -209,41 +216,114 @@ export function startStage4SchoolPickupCutscene(state: SimulationState): Simulat
 
 export function startStage4PregnancyReveal(state: SimulationState): SimulationState {
   if (!state.stage4) return state;
+  const snap = getCutsceneTimelineSnapshot(STAGE4_PREGNANCY_REVEAL_TIMELINE, 0);
   const s4 = unlockStage4Memory(
     {
       ...state.stage4,
       mapId: 'moms_house_yard',
-      locationLabel: 'Casa da Mãe de Grazi · A notícia',
-      eraLabel: 'A descoberta da gravidez',
-      cutscene: 'none',
+      locationLabel: 'Casa da Mãe de Grazi · Varanda à Noite',
+      eraLabel: 'A Revelação · Um Novo Começo',
+      cutscene: 'pregnancy_reveal',
       cutsceneElapsed: 0,
-      cameraFocusX: 11.4 * TILE_SIZE,
-      cameraFocusY: 9.0 * TILE_SIZE,
-      cameraZoom: 1.0,
+      cameraFocusX: snap.cameraFocusX,
+      cameraFocusY: snap.cameraFocusY,
+      cameraZoom: snap.cameraZoom,
       graziPregnant: false,
+      cristianAge: 'unborn',
       bikeRide: null,
     },
     'mem_s4_bicicleta',
   );
   return {
     ...state,
-    questPhase: 's4_explore_moms_house',
+    questPhase: 's4_cutscene_pregnancy_reveal',
     stage4: s4,
     player: {
       ...state.player,
       x: 11.4 * TILE_SIZE,
-      y: 10.2 * TILE_SIZE,
+      y: 9.8 * TILE_SIZE,
       dir: 'left',
       isMoving: false,
     },
-    npcs: createStage4Npcs('moms_house_yard', 'moms_house'),
-    activeDialogue: STAGE_4_DIALOGUES.s4_pregnancy_reveal,
+    npcs: [],
+    activeDialogue: null,
     dialogueLineIndex: 0,
   };
 }
 
+export function getStage4PregnancyRevealSnapshot(
+  state: SimulationState,
+): CutsceneTimelineSnapshot | null {
+  if (
+    state.stageId !== 'stage-4' ||
+    !state.stage4 ||
+    state.stage4.cutscene !== 'pregnancy_reveal'
+  ) {
+    return null;
+  }
+  return getCutsceneTimelineSnapshot(
+    STAGE4_PREGNANCY_REVEAL_TIMELINE,
+    state.stage4.cutsceneElapsed,
+  );
+}
+
+function finishStage4PregnancyRevealToScene3(state: SimulationState): SimulationState {
+  if (!state.stage4) return state;
+  const s4WithMemory = unlockStage4Memory(
+    {
+      ...state.stage4,
+      graziPregnant: true,
+    },
+    'mem_s4_gravidez',
+  );
+  return startStage4LaborWalk({
+    ...state,
+    stage4: s4WithMemory,
+  });
+}
+
+export function advanceStage4PregnancyRevealCutscene(
+  state: SimulationState,
+): SimulationState {
+  if (
+    state.stageId !== 'stage-4' ||
+    !state.stage4 ||
+    state.stage4.cutscene !== 'pregnancy_reveal'
+  ) {
+    return state;
+  }
+
+  const { nextElapsed, completed, didAdvance } = advanceTimelineElapsed(
+    STAGE4_PREGNANCY_REVEAL_TIMELINE,
+    state.stage4.cutsceneElapsed,
+  );
+  if (!didAdvance) {
+    return state;
+  }
+  if (completed || nextElapsed >= S4_PREGNANCY_REVEAL_TOTAL_DURATION) {
+    return finishStage4PregnancyRevealToScene3(state);
+  }
+
+  const snap = getCutsceneTimelineSnapshot(STAGE4_PREGNANCY_REVEAL_TIMELINE, nextElapsed);
+  return {
+    ...state,
+    stage4: {
+      ...state.stage4,
+      cutsceneElapsed: nextElapsed,
+      cameraFocusX: snap.cameraFocusX,
+      cameraFocusY: snap.cameraFocusY,
+      cameraZoom: snap.cameraZoom,
+      graziPregnant: false,
+    },
+  };
+}
+
 export function isStage4CutsceneActive(state: SimulationState): boolean {
-  return state.stageId === 'stage-4' && Boolean(state.stage4 && state.stage4.cutscene !== 'none');
+  return (
+    state.stageId === 'stage-4' &&
+    Boolean(state.stage4 && state.stage4.cutscene !== 'none') &&
+    !state.activeDialogue
+  );
 }
 
 export function isStage4ExplorationPhase(phase: SimulationState['questPhase']): boolean {
@@ -270,19 +350,17 @@ function unlockStage4Memory(s4: Stage4State, memoryId: string): Stage4State {
 
 export function skipStage4Intro(state: SimulationState): SimulationState {
   if (state.stageId !== 'stage-4' || !state.stage4) return state;
-  if (state.stage4.cutscene !== 'pregnancy_news') return state;
+  if (state.stage4.cutscene !== 'home_routine') return state;
 
-  const s4 = unlockStage4Memory(
-    {
-      ...state.stage4,
-      cutscene: 'none',
-      cutsceneElapsed: 0,
-      cameraFocusX: 11.4 * TILE_SIZE,
-      cameraFocusY: 10.2 * TILE_SIZE,
-      cameraZoom: 1.0,
-    },
-    'mem_s4_gravidez',
-  );
+  const s4 = {
+    ...state.stage4,
+    cutscene: 'none' as const,
+    cutsceneElapsed: 0,
+    cameraFocusX: 11.4 * TILE_SIZE,
+    cameraFocusY: 10.2 * TILE_SIZE,
+    cameraZoom: 1.0,
+    graziPregnant: false,
+  };
 
   return {
     ...state,
@@ -306,7 +384,7 @@ export function startStage4BicycleRide(state: SimulationState): SimulationState 
       cameraFocusX: S4_BIKE_START_X + 110,
       cameraFocusY: 8.9 * TILE_SIZE,
       cameraZoom: 1.0,
-      graziPregnant: true,
+      graziPregnant: false,
       cristianAge: 'unborn',
       bikeRide: {
         active: true,
@@ -1065,6 +1143,7 @@ export function findNearestStage4Interactable(state: SimulationState): Stage4Int
   const unlockedSet = new Set(s4.unlockedMemories);
   for (const mem of STAGE_4_MEMORIES) {
     if (mem.mapId !== s4.mapId) continue;
+    if (mem.id === 'mem_s4_gravidez' && !unlockedSet.has(mem.id) && !s4.graziPregnant) continue;
     const dist = Math.hypot(px - mem.x, py - mem.y);
     if (dist <= mem.radius) {
       const already = unlockedSet.has(mem.id);
@@ -1183,6 +1262,9 @@ export function handleStage4DialogueComplete(
   if (action === 's4_start_bicycle_cutscene') {
     return startStage4BicycleRide(baseCleared);
   }
+  if (action === 's4_start_school_pickup') {
+    return startStage4SchoolPickupCutscene(baseCleared);
+  }
   if (action === 's4_start_labor_walk') {
     if (!baseCleared.stage4) return baseCleared;
     const pregnancyState = {
@@ -1235,13 +1317,23 @@ export function stepStage4Simulation(state: SimulationState, dt: number): Simula
   }
 
   if (s4.cutscene === 'none') {
+    const needsNpcSwap =
+      state.questPhase === 's4_build_meia_agua' &&
+      state.npcs.some((n) => n.role === 'ariel');
+    if (needsNpcSwap) {
+      return {
+        ...state,
+        stage4: s4,
+        npcs: createStage4Npcs('backyard_construction', 'construction'),
+      };
+    }
     return s4 === state.stage4 ? state : { ...state, stage4: s4 };
   }
 
   const nextElapsed = s4.cutsceneElapsed + dt;
 
-  if (s4.cutscene === 'pregnancy_news') {
-    if (nextElapsed >= S4_PREGNANCY_DURATION) {
+  if (s4.cutscene === 'home_routine') {
+    if (nextElapsed >= S4_HOME_ROUTINE_DURATION) {
       return skipStage4Intro({ ...state, stage4: s4 });
     }
     return {
@@ -1264,13 +1356,23 @@ export function stepStage4Simulation(state: SimulationState, dt: number): Simula
       STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION + STAGE4_BIKE_BOARD_DURATION;
     let nextBike: Stage4BikeRideState;
     if (nextElapsed < STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION) {
-      nextBike = advanceBicycleMotion(bike, -1, 0, dt, 'left');
-      if (nextBike.x <= STAGE4_SCHOOL_BIKE_STOP_X) {
+      if (bike.x > STAGE4_SCHOOL_BIKE_STOP_X) {
+        nextBike = advanceBicycleMotion(bike, -1, 0, dt, 'left');
+        if (nextBike.x <= STAGE4_SCHOOL_BIKE_STOP_X) {
+          nextBike = {
+            ...nextBike,
+            x: STAGE4_SCHOOL_BIKE_STOP_X,
+            vx: 0,
+            vy: 0,
+          };
+        }
+      } else {
         nextBike = {
-          ...nextBike,
+          ...bike,
           x: STAGE4_SCHOOL_BIKE_STOP_X,
           vx: 0,
           vy: 0,
+          facing: 'left',
         };
       }
     } else if (nextElapsed < boardAt) {
@@ -1312,6 +1414,30 @@ export function stepStage4Simulation(state: SimulationState, dt: number): Simula
         cameraFocusX: nextBike.x - 36,
         cameraFocusY: 8.6 * TILE_SIZE,
         bikeRide: nextBike,
+      },
+    };
+  }
+
+  if (s4.cutscene === 'pregnancy_reveal') {
+    if (nextElapsed >= S4_PREGNANCY_REVEAL_TOTAL_DURATION) {
+      return finishStage4PregnancyRevealToScene3({
+        ...state,
+        stage4: {
+          ...s4,
+          cutsceneElapsed: S4_PREGNANCY_REVEAL_TOTAL_DURATION,
+        },
+      });
+    }
+    const snap = getCutsceneTimelineSnapshot(STAGE4_PREGNANCY_REVEAL_TIMELINE, nextElapsed);
+    return {
+      ...state,
+      stage4: {
+        ...s4,
+        cutsceneElapsed: nextElapsed,
+        cameraFocusX: snap.cameraFocusX,
+        cameraFocusY: snap.cameraFocusY,
+        cameraZoom: snap.cameraZoom,
+        graziPregnant: false,
       },
     };
   }
@@ -1448,8 +1574,8 @@ export function getStage4ObjectiveText(state: SimulationState): string | null {
   if (state.stageId !== 'stage-4' || !state.stage4) return null;
   const s4 = state.stage4;
   switch (state.questPhase) {
-    case 's4_intro_pregnancy':
-      return 'Aos 19 anos · A descoberta da gravidez de Cristian';
+    case 's4_intro_home_routine':
+      return 'A rotina do casal na casa da mãe de Grazi';
     case 's4_explore_moms_house':
       return 'Explore o quintal da casa da mãe de Grazi e vá até a bicicleta com Ariel';
     case 's4_ride_bicycle':
@@ -1458,7 +1584,7 @@ export function getStage4ObjectiveText(state: SimulationState): string | null {
         : 'Pedale com Ariel levando Grazi na garupa até o ponto de ônibus e a escola (→)';
     case 's4_cutscene_bicycle':
       if (s4.cutsceneElapsed < STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION) {
-        return 'Ariel chega de bicicleta para buscar Grazi na escola';
+        return 'Fim da aula · Ariel aguarda Grazi no portão da escola';
       }
       if (
         s4.cutsceneElapsed <
@@ -1467,6 +1593,8 @@ export function getStage4ObjectiveText(state: SimulationState): string | null {
         return 'Grazi sobe na garupa para voltar para casa com Ariel';
       }
       return 'Ariel e Grazi estão voltando para casa de bicicleta';
+    case 's4_cutscene_pregnancy_reveal':
+      return 'Em frente à casa da mãe de Grazi · Uma revelação emocionante';
     case 's4_explore_labor_walk':
     case 's4_cutscene_labor_walk':
       return '9 meses de gestação · Caminhando de mãos dadas pela rua do bairro';
@@ -1478,8 +1606,8 @@ export function getStage4ObjectiveText(state: SimulationState): string | null {
       return 'O bercinho amarelo do Cristian e os brinquedinhos do tio Léo';
     case 's4_build_meia_agua':
       return s4.carryingMaterialId
-        ? `Leve o material até o terreno nos fundos para construir a meia-água (${s4.buildStage}/3)`
-        : `Com Cristian nascido, construa a meia-água nos fundos do terreno (${s4.buildStage}/3)`;
+        ? `Com Ariel, leve o material até o terreno nos fundos para construir a meia-água (${s4.buildStage}/3)`
+        : `Controle Ariel para pegar os materiais e construir a meia-água nos fundos do terreno (${s4.buildStage}/3)`;
     case 's4_explore_toddler_home':
       return s4.watchedCristianDance
         ? 'Aproxime-se da TV e do console para jogar videogame com Ariel'
@@ -1502,33 +1630,33 @@ export function getStage4CutsceneCaption(state: SimulationState): Stage4Cutscene
   const s4 = state.stage4;
   const t = s4.cutsceneElapsed;
 
-  if (s4.cutscene === 'pregnancy_news') {
+  if (s4.cutscene === 'home_routine') {
     if (t < 3.0) {
       return {
-        badge: 'FASE 4 · NOSSA PEQUENA GRANDE AVENTURA',
-        speaker: 'Um Novo Capítulo',
+        badge: 'FASE 4 · ROTINA DE FIM DE TARDE',
+        speaker: 'Um Momento Tranquilo',
         speakerId: 'grazi_adult',
         emotion: 'happy',
-        text: 'Aos 19 anos, Grazi descobriu que estava grávida de Cristian. Uma fase inteiramente nova começava para os dois.',
+        text: 'Na casa da mãe de Grazi, o casal compartilha a rotina entre o trabalho e os estudos à noite.',
         canSkipIntro: true,
       };
     }
     if (t < 6.0) {
       return {
-        badge: 'FASE 4 · A NOTÍCIA',
+        badge: 'FASE 4 · COMPANHIA',
         speaker: 'Ariel',
         speakerId: 'ariel_adult',
-        emotion: 'thoughtful',
-        text: 'Ariel recebeu a notícia com alegria genuína no coração — e também com a preocupação responsável de cuidar bem da família que estava nascendo.',
+        emotion: 'romantic',
+        text: 'Ariel acompanha Grazi com carinho antes de ela sair para a escola.',
         canSkipIntro: true,
       };
     }
     return {
-      badge: 'FASE 4 · JUNTOS NESSA AVENTURA',
+      badge: 'FASE 4 · CAMINHO DA ESCOLA',
       speaker: 'Grazi & Ariel',
       speakerId: 'grazi_adult',
-      emotion: 'romantic',
-      text: 'De mãos dadas no quintal da casa da mãe de Grazi, eles deram o primeiro passo dessa pequena grande aventura.',
+      emotion: 'happy',
+      text: 'Depois de um momento juntos, os dois se preparam para mais uma noite de aula.',
       canSkipIntro: true,
     };
   }
@@ -1536,10 +1664,10 @@ export function getStage4CutsceneCaption(state: SimulationState): Stage4Cutscene
   if (s4.cutscene === 'bicycle_ride') {
     if (t < STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION) {
       return {
-        badge: 'SAÍDA DA ESCOLA',
-        speaker: 'Ariel chega de bicicleta',
+        badge: 'FIM DA AULA',
+        speaker: 'Ariel espera Grazi',
         speakerId: 'ariel_adult',
-        text: 'Ariel chega de bicicleta à escola para buscar Grazi.',
+        text: 'Ariel aguarda Grazi no portão da escola, com a bicicleta pronta para voltarem juntos.',
       };
     }
     if (t < STAGE4_BIKE_SCHOOL_ARRIVAL_DURATION + STAGE4_BIKE_BOARD_DURATION) {
@@ -1555,6 +1683,17 @@ export function getStage4CutsceneCaption(state: SimulationState): Stage4Cutscene
       speaker: 'A volta juntos',
       speakerId: 'ariel_adult',
       text: 'Ariel pedala com cuidado, e os dois seguem juntos para casa.',
+    };
+  }
+
+  if (s4.cutscene === 'pregnancy_reveal') {
+    const snap = getCutsceneTimelineSnapshot(STAGE4_PREGNANCY_REVEAL_TIMELINE, t);
+    return {
+      badge: `CENA 2 · A REVELAÇÃO (${snap.step.index}/${snap.totalSteps})`,
+      speaker: snap.step.speakerName,
+      speakerId: snap.activeSpeaker,
+      emotion: snap.activeEmotion,
+      text: snap.visibleText || snap.step.stageDirection || '',
     };
   }
 

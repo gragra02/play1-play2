@@ -13,6 +13,7 @@ import {
   isStage4ExplorationPhase,
   type Stage4CutsceneCaption,
 } from '../game/stage4Rules';
+import type { CutsceneTimelineSnapshot } from '../game/cutscene';
 import type {
   DialogueLine,
   Direction,
@@ -26,19 +27,28 @@ import type {
   Stage4CutsceneKind,
   StageId,
 } from '../game/types';
-import { getCharacterPortraitSrc } from './portraits';
+import { getCharacterPortraitSrc, getCutscenePortraitSrc } from './portraits';
 
 const TOTAL_MEMORIES_COUNT =
   STAGE_2_MEMORIES.length + STAGE_3_MEMORIES.length + STAGE_4_MEMORIES.length;
 
-function inferSpeakerIdFromLabel(label?: string): SpeakerId | null {
+function normalizeStage4SpeakerId(speaker: SpeakerId | null, stageId: StageId): SpeakerId | null {
+  if (!speaker) return null;
+  if (stageId === 'stage-4') {
+    if (speaker === 'grazi' || speaker === 'grazi_thought') return 'grazi_adult';
+    if (speaker === 'ariel') return 'ariel_adult';
+  }
+  return speaker;
+}
+
+function inferSpeakerIdFromLabel(label?: string, stageId?: StageId): SpeakerId | null {
   if (!label) return null;
   const n = label.toLowerCase();
   if (n.includes('cristian')) return 'cristian';
   if (n.includes('nani') || n.includes('madrinha')) return 'nani';
   if (n.includes('senhor') && n.includes('bar')) return 'bar_man';
-  if (n.includes('grazi')) return 'grazi';
-  if (n.includes('ariel')) return 'ariel';
+  if (n.includes('grazi')) return stageId === 'stage-4' ? 'grazi_adult' : 'grazi';
+  if (n.includes('ariel')) return stageId === 'stage-4' ? 'ariel_adult' : 'ariel';
   if (n.includes('laura')) return 'laura';
   if (n.includes('léo') || n.includes('leo')) return 'leo';
   if (n.includes('júnior') || n.includes('junior')) return 'junior';
@@ -75,6 +85,7 @@ export interface HudSnapshot {
   stage4EraLabel: string | null;
   stage4Cutscene: Stage4CutsceneKind;
   stage4Caption: Stage4CutsceneCaption | null;
+  stage4PregnancyReveal: CutsceneTimelineSnapshot | null;
   stage4BuildStage: number;
   stage4CarryingLabel: string | null;
   stage4BikeActive: boolean;
@@ -152,7 +163,7 @@ function SpeakerPortrait({
   const portraitSrc = getCharacterPortraitSrc(speaker, emotion);
   if (portraitSrc) {
     const isThought = speaker === 'grazi_thought';
-    const isAriel = speaker === 'ariel';
+    const isAriel = speaker === 'ariel' || speaker === 'ariel_adult';
     const animated = emotion === 'amused' || emotion === 'happy' || isThought;
     return (
       <div
@@ -323,6 +334,145 @@ export function GameHUD({
     const cap = hud.stage4Caption;
     const isEnding = hud.stage4Cutscene === 'family_ending_7y';
 
+    // Cinematic 8-Step Pregnancy Reveal (CENA 2)
+    if (hud.stage4Cutscene === 'pregnancy_reveal' && hud.stage4PregnancyReveal) {
+      const rev = hud.stage4PregnancyReveal;
+      const portraitSrc =
+        rev.activePortraitKey !== 'none'
+          ? getCutscenePortraitSrc(rev.activePortraitKey, rev.activeSpeaker, rev.activeEmotion)
+          : null;
+      const isStep4Gazes = rev.step.id === 's4_c2_step4_gazes';
+      const isStep7Embrace = rev.step.id === 's4_c2_step7_embrace';
+      const isStep1Entry = rev.step.id === 's4_c2_step1_entry';
+
+      return (
+        <div className="fixed inset-0 z-20 pointer-events-none flex flex-col justify-between p-4 sm:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="rpg-mahogany-panel px-3.5 py-1.5">
+              <div className="font-mono-tabular text-[11px] sm:text-xs font-bold text-[#ffd166] tracking-wide">
+                {cap.badge}
+              </div>
+              {hud.stage4EraLabel && (
+                <div className="text-[11px] text-[#faeccd]/90">{hud.stage4EraLabel}</div>
+              )}
+            </div>
+          </div>
+
+          {isStep4Gazes && portraitSrc ? (
+            <div className="w-full flex flex-col items-center gap-2.5 pb-3">
+              <div className="relative w-28 h-28 sm:w-32 sm:h-32 bg-[#3d2111] border-3 border-[#d49b56] overflow-hidden shadow-[0_0_24px_rgba(255,209,102,0.22)]">
+                <img
+                  src={portraitSrc}
+                  alt=""
+                  aria-hidden="true"
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover pixelated block"
+                />
+                {rev.step.effects.eyeSparkle && (
+                  <svg
+                    viewBox="0 0 32 32"
+                    shapeRendering="crispEdges"
+                    className="absolute inset-0 w-full h-full pointer-events-none"
+                    aria-hidden="true"
+                  >
+                    <rect x="11" y="13" width="2" height="2" fill="#fff9d6" opacity="0.85" />
+                    <rect x="19" y="13" width="2" height="2" fill="#fff9d6" opacity="0.85" />
+                  </svg>
+                )}
+              </div>
+              {rev.step.stageDirection && (
+                <div className="rpg-wood-panel px-4 py-2 max-w-lg text-center">
+                  <p className="text-xs sm:text-sm italic font-medium text-[#5c351e]">
+                    {rev.step.stageDirection}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : isStep1Entry || isStep7Embrace ? (
+            <div className="w-full flex justify-center pb-2">
+              {rev.step.stageDirection && (
+                <div className="rpg-wood-panel px-4 py-2 max-w-lg text-center">
+                  <p className="text-xs sm:text-sm italic font-medium text-[#5c351e]">
+                    {rev.step.stageDirection}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="w-full flex justify-center pointer-events-auto pb-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (rev.step.canAdvance) {
+                    onInteractOrAdvance();
+                  }
+                }}
+                className="w-full max-w-2xl rpg-wood-panel px-4 py-3.5 sm:px-5 sm:py-4 flex items-center gap-3.5 text-left cursor-pointer"
+              >
+                {portraitSrc && (
+                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 bg-[#5c351e] border-3 border-[#d49b56] overflow-hidden shadow-[inset_0_0_0_2px_#3d2111]">
+                    <img
+                      src={portraitSrc}
+                      alt=""
+                      aria-hidden="true"
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover pixelated block"
+                    />
+                    {(rev.step.effects.tearyEyes || rev.step.effects.eyeSparkle) && (
+                      <svg
+                        viewBox="0 0 32 32"
+                        shapeRendering="crispEdges"
+                        className="absolute inset-0 w-full h-full pointer-events-none"
+                        aria-hidden="true"
+                      >
+                        <rect x="11" y="13" width="2" height="2" fill="#fff9d6" opacity="0.9" />
+                        <rect x="19" y="13" width="2" height="2" fill="#fff9d6" opacity="0.9" />
+                        {rev.step.effects.tearyEyes && (
+                          <>
+                            <rect x="11" y="16" width="2" height="2" fill="#bfe3ff" opacity="0.9" />
+                            <rect x="19" y="16" width="2" height="2" fill="#bfe3ff" opacity="0.9" />
+                          </>
+                        )}
+                      </svg>
+                    )}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    {rev.step.speakerName && (
+                      <span className="font-display-pixel text-xs sm:text-sm font-bold text-[#9e2e24]">
+                        {rev.step.speakerName}
+                      </span>
+                    )}
+                    <span className="font-mono-tabular text-[11px] font-bold text-[#7c4726]">
+                      {rev.step.index}/{rev.totalSteps}
+                    </span>
+                  </div>
+                  {rev.step.stageDirection && (
+                    <p className="mt-0.5 text-xs italic font-medium text-[#6b3b1e]">
+                      {rev.step.stageDirection}
+                    </p>
+                  )}
+                  {rev.step.text && (
+                    <p className="mt-1 text-sm sm:text-base font-semibold text-[#3d2111] leading-snug min-h-[1.75em]">
+                      &ldquo;{rev.visibleText}&rdquo;
+                    </p>
+                  )}
+                  {rev.step.canAdvance && (
+                    <div className="mt-1.5 text-right font-mono-tabular text-[11px] font-bold text-[#8c4e27]">
+                      {!rev.isTypingComplete
+                        ? 'Espaço / Toque para completar'
+                        : 'Espaço / Enter / Toque ▼'}
+                    </div>
+                  )}
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
     if (isEnding) {
       return (
         <div className="fixed inset-0 z-20 flex flex-col items-center justify-between p-4 sm:p-6 pointer-events-none">
@@ -357,7 +507,10 @@ export function GameHUD({
       hud.stage4Cutscene === 'videogame_session' && hud.stage4PuzzlePending
         ? STAGE_4_VIDEOGAME_PUZZLES[hud.stage4PuzzleStep] ?? null
         : null;
-    const resolvedSpeakerId = cap.speakerId ?? inferSpeakerIdFromLabel(cap.speaker);
+    const resolvedSpeakerId = normalizeStage4SpeakerId(
+      cap.speakerId ?? inferSpeakerIdFromLabel(cap.speaker, hud.stageId),
+      hud.stageId,
+    );
 
     return (
       <div className="fixed inset-0 z-20 pointer-events-none flex flex-col justify-between p-3 sm:p-5">
@@ -1068,7 +1221,10 @@ export function GameHUD({
               hud.activeLine.speaker === 'grazi_thought' ? 'rpg-thought-panel' : 'rpg-wood-panel'
             }`}
           >
-            <SpeakerPortrait speaker={hud.activeLine.speaker} emotion={hud.activeLine.emotion} />
+            <SpeakerPortrait
+              speaker={normalizeStage4SpeakerId(hud.activeLine.speaker, hud.stageId) ?? hud.activeLine.speaker}
+              emotion={hud.activeLine.emotion}
+            />
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2">
                 <span className="font-display-pixel text-xs sm:text-sm font-bold text-[#9e2e24]">

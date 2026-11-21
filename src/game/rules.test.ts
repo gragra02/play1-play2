@@ -48,10 +48,18 @@ import {
   STAGE_4_MEMORIES,
 } from './stage4Data';
 import {
+  STAGE4_PREGNANCY_REVEAL_TIMELINE,
+  getCutsceneTimelineSnapshot,
+} from './cutscene';
+import {
+  S4_BIKE_START_X,
+  advanceStage4PregnancyRevealCutscene,
   chooseStage4VideogameOption,
   createStage4Simulation,
   finishStage4Ending,
   getStage4CutsceneCaption,
+  getStage4PregnancyRevealSnapshot,
+  isStage4CutsceneActive,
 } from './stage4Rules';
 
 test('initial simulation spawns Grazi in an open walkway with Laura and Ariel already visible dancing on the pista', () => {
@@ -809,25 +817,32 @@ test('Stage 3 narrative respects constraints: zero ice cream, exact closing quot
 // ============================================================================
 // STAGE 4: NOSSA PEQUENA GRANDE AVENTURA — FULL 8-BEAT & GROWTH UNIT TESTS
 // ============================================================================
-test('Stage 4 begins with the school bicycle pickup and pregnancy reveal before the existing story continues', () => {
+test('Stage 4 begins with the school bicycle ride, school pickup and pregnancy reveal before the existing story continues', () => {
   const seenCristianAges: string[] = [];
 
   let sim = createStage4Simulation(false, []);
   assert.equal(sim.stageId, 'stage-4');
-  assert.equal(sim.questPhase, 's4_cutscene_bicycle');
-  assert.equal(sim.stage4?.cutscene, 'bicycle_ride');
+  assert.equal(sim.questPhase, 's4_ride_bicycle');
+  assert.equal(sim.stage4?.cutscene, 'none');
   assert.equal(sim.stage4?.mapId, 'neighborhood_bike_road');
   assert.equal(sim.stage4?.graziPregnant, false);
   assert.equal(sim.stage4?.cristianAge, 'unborn');
-  assert.equal(sim.stage4?.bikeRide?.x, STAGE4_SCHOOL_BIKE_START_X);
+  assert.equal(sim.stage4?.bikeRide?.x, S4_BIKE_START_X);
   seenCristianAges.push(sim.stage4!.cristianAge);
 
-  assert.ok(getStage4CutsceneCaption(sim)?.text.includes('buscar Grazi'));
-  const schoolArrivalX = sim.stage4!.bikeRide!.x;
+  for (let i = 0; i < 120 && !sim.activeDialogue; i++) {
+    sim = movePlayer(sim, 1, 0, 0.1);
+  }
+  assert.equal(sim.activeDialogue?.id, 's4_bicycle_arrival');
+  while (sim.activeDialogue) sim = advanceDialogue(sim);
+
+  assert.equal(sim.questPhase, 's4_cutscene_bicycle');
+  assert.equal(sim.stage4?.cutscene, 'bicycle_ride');
+  assert.equal(sim.stage4?.bikeRide?.x, STAGE4_SCHOOL_BIKE_START_X);
+
+  assert.ok(getStage4CutsceneCaption(sim)?.text.includes('aguarda Grazi'));
   sim = stepSimulationTimers(sim, 0.6);
-  assert.ok(sim.stage4!.bikeRide!.x < schoolArrivalX);
-  assert.ok(sim.stage4!.bikeRide!.wheelAngle < 0);
-  assert.ok(sim.stage4!.bikeRide!.pedalPhase > 0);
+  assert.equal(sim.stage4?.bikeRide?.x, STAGE4_SCHOOL_BIKE_STOP_X);
 
   sim = stepSimulationTimers(sim, 0.9);
   assert.equal(sim.stage4?.bikeRide?.x, STAGE4_SCHOOL_BIKE_STOP_X);
@@ -839,27 +854,81 @@ test('Stage 4 begins with the school bicycle pickup and pregnancy reveal before 
   assert.ok(sim.stage4!.bikeRide!.x < STAGE4_SCHOOL_BIKE_STOP_X);
   assert.equal(sim.stage4?.bikeRide?.facing, 'left');
   assert.ok(sim.stage4!.bikeRide!.wheelAngle < 0);
+  assert.ok(sim.stage4!.bikeRide!.pedalPhase > 0);
 
-  for (let i = 0; i < 120 && !sim.activeDialogue; i++) {
+  for (let i = 0; i < 120 && sim.stage4?.cutscene !== 'pregnancy_reveal'; i++) {
     sim = stepSimulationTimers(sim, 0.1);
   }
+  assert.equal(sim.questPhase, 's4_cutscene_pregnancy_reveal');
   assert.equal(sim.stage4?.mapId, 'moms_house_yard');
-  assert.equal(sim.stage4?.cutscene, 'none');
+  assert.equal(sim.stage4?.cutscene, 'pregnancy_reveal');
   assert.equal(sim.stage4?.graziPregnant, false);
-  assert.equal(sim.activeDialogue?.id, 's4_pregnancy_reveal');
   assert.ok(sim.stage4?.unlockedMemories.includes('mem_s4_bicicleta'));
-  assert.ok(
-    STAGE_4_DIALOGUES.s4_pregnancy_reveal.lines.some((line) =>
-      line.text.includes('grávida'),
-    ),
-  );
-  assert.equal(
-    STAGE_4_DIALOGUES.s4_pregnancy_reveal.onCompleteAction,
-    's4_start_labor_walk',
-  );
+  assert.equal(sim.stage4?.unlockedMemories.includes('mem_s4_gravidez'), false);
 
-  // Finishing the home dialogue announces the pregnancy and continues into the existing 9-month scene.
-  while (sim.activeDialogue) sim = advanceDialogue(sim);
+  // Step 1 (2s): Entry zoom 1.0 -> 1.15
+  assert.equal(getStage4PregnancyRevealSnapshot(sim)?.step.index, 1);
+  sim = advanceStage4PregnancyRevealCutscene(sim);
+
+  // Step 2 (4s): Hesitation ("Ariel... preciso te contar uma coisa.")
+  assert.equal(getStage4PregnancyRevealSnapshot(sim)?.step.index, 2);
+  sim = advanceStage4PregnancyRevealCutscene(sim); // completes slow typing
+  assert.equal(
+    getStage4PregnancyRevealSnapshot(sim)?.visibleText,
+    'Ariel... preciso te contar uma coisa.',
+  );
+  sim = advanceStage4PregnancyRevealCutscene(sim);
+
+  // Step 3 (3s): Expectation (Ariel silent portrait)
+  assert.equal(getStage4PregnancyRevealSnapshot(sim)?.step.index, 3);
+  sim = advanceStage4PregnancyRevealCutscene(sim);
+
+  // Step 4 (5s): Alternating gazes (1.2s each) — MUST NOT be skippable!
+  assert.equal(getStage4PregnancyRevealSnapshot(sim)?.step.index, 4);
+  const step4ElapsedBefore = sim.stage4!.cutsceneElapsed;
+  sim = advanceStage4PregnancyRevealCutscene(sim);
+  assert.equal(sim.stage4?.cutsceneElapsed, step4ElapsedBefore);
+  assert.equal(getStage4PregnancyRevealSnapshot(sim)?.activePortraitKey, 's4_grazi_adult');
+  sim = stepSimulationTimers(sim, 1.3);
+  assert.equal(getStage4PregnancyRevealSnapshot(sim)?.activePortraitKey, 's4_ariel_adult');
+  sim = stepSimulationTimers(sim, 3.8);
+
+  // Step 5 (4s): Revelation ("Nós vamos ser pai e mãe.")
+  assert.equal(getStage4PregnancyRevealSnapshot(sim)?.step.index, 5);
+  assert.equal(sim.stage4?.graziPregnant, false);
+  sim = advanceStage4PregnancyRevealCutscene(sim); // completes typing
+  assert.equal(
+    getStage4PregnancyRevealSnapshot(sim)?.visibleText,
+    'Nós vamos ser pai e mãe.',
+  );
+  sim = advanceStage4PregnancyRevealCutscene(sim);
+
+  // Step 6 (5s): Reaction ("Sério...? Grazi... eu vou ser pai?")
+  assert.equal(getStage4PregnancyRevealSnapshot(sim)?.step.index, 6);
+  sim = advanceStage4PregnancyRevealCutscene(sim); // completes typing
+  assert.equal(
+    getStage4PregnancyRevealSnapshot(sim)?.visibleText,
+    'Sério...? Grazi... eu vou ser pai?',
+  );
+  sim = advanceStage4PregnancyRevealCutscene(sim);
+
+  // Step 7 (6s): Embrace (couple_kiss_gaze -> couple_forehead_kiss) — MUST NOT be skippable!
+  assert.equal(getStage4PregnancyRevealSnapshot(sim)?.step.index, 7);
+  const step7ElapsedBefore = sim.stage4!.cutsceneElapsed;
+  sim = advanceStage4PregnancyRevealCutscene(sim);
+  assert.equal(sim.stage4?.cutsceneElapsed, step7ElapsedBefore);
+  sim = stepSimulationTimers(sim, 6.1);
+
+  // Step 8 (3s): Closing ("Eu te amo. Vocês dois vão ter tudo de mim.") -> unlocks mem_s4_gravidez & transitions to Scene 3!
+  assert.equal(getStage4PregnancyRevealSnapshot(sim)?.step.index, 8);
+  assert.equal(sim.stage4?.graziPregnant, false);
+  sim = advanceStage4PregnancyRevealCutscene(sim); // completes typing
+  assert.equal(
+    getStage4PregnancyRevealSnapshot(sim)?.visibleText,
+    'Eu te amo. Vocês dois vão ter tudo de mim.',
+  );
+  sim = advanceStage4PregnancyRevealCutscene(sim); // finishes Scene 2
+
   assert.equal(sim.questPhase, 's4_cutscene_labor_walk');
   assert.equal(sim.stage4?.cutscene, 'labor_walk_bar');
   assert.equal(sim.stage4?.graziPregnant, true);
@@ -921,16 +990,18 @@ test('Stage 4 begins with the school bicycle pickup and pregnancy reveal before 
     if (sim.activeDialogue?.id === 's4_crib_reflection') break;
   }
   assert.equal(sim.activeDialogue?.id, 's4_crib_reflection');
+  assert.equal(isStage4CutsceneActive(sim), false);
   assert.ok(
     STAGE_4_DIALOGUES.s4_crib_reflection.lines.every((line) => line.text.length < 75),
   );
 
-  // 5. ONLY AFTER Cristian is born & crib scene completes -> Build the backyard meia-água!
+  // 5. ONLY AFTER Cristian is born & crib scene completes -> Ariel builds the backyard meia-água while Grazi is the NPC!
   while (sim.activeDialogue) sim = advanceDialogue(sim);
   assert.equal(sim.questPhase, 's4_build_meia_agua');
   assert.equal(sim.stage4?.graziPregnant, false);
   assert.equal(sim.stage4?.cristianAge, 'baby');
   assert.equal(sim.stage4?.buildStage, 0);
+  assert.equal(sim.npcs[0]?.role, 'grazi');
   while (sim.activeDialogue) sim = advanceDialogue(sim);
 
   for (let stepIdx = 0; stepIdx < 3; stepIdx++) {
@@ -1026,13 +1097,41 @@ test('Stage 4 narrative preserves blond Cristian, Nani maternity trip, yellow cr
   assert.ok(allText.includes('meia-água'));
   assert.ok(allText.includes('bicicleta'));
   assert.ok(allText.includes('videogame'));
-  // Chronology check: bicycle arrival must lead to labor walk, never directly to building the meia-água
-  assert.equal(STAGE_4_DIALOGUES.s4_bicycle_arrival.onCompleteAction, 's4_start_labor_walk');
+  // Chronology check: bicycle arrival leads to school pickup -> pregnancy reveal -> labor walk, and crib leads to building the meia-água -> toddler home
+  assert.equal(STAGE_4_DIALOGUES.s4_bicycle_arrival.onCompleteAction, 's4_start_school_pickup');
+  assert.equal(STAGE_4_DIALOGUES.s4_pregnancy_reveal.onCompleteAction, 's4_start_labor_walk');
   assert.equal(STAGE_4_DIALOGUES.s4_crib_reflection.onCompleteAction, 's4_start_build_meia_agua');
   assert.equal(STAGE_4_DIALOGUES.s4_construction_done.onCompleteAction, 's4_start_toddler_home');
   // Ensure birth is calm and non-traumatic, and no copyrighted Tomb Raider trademark text is copied
   assert.equal(allText.includes('emergência'), false);
   assert.equal(allText.includes('tomb raider'), false);
+
+  // Portrait rule: Stage 4 dialogues and pregnancy reveal cutscene must NEVER use teen 'grazi' or 'ariel' speakers/portraits
+  for (const seq of Object.values(STAGE_4_DIALOGUES)) {
+    for (const line of seq.lines) {
+      assert.notEqual(line.speaker, 'grazi');
+      assert.notEqual(line.speaker, 'grazi_thought');
+      assert.notEqual(line.speaker, 'ariel');
+    }
+  }
+  for (const step of STAGE4_PREGNANCY_REVEAL_TIMELINE) {
+    assert.ok(
+      step.portraitKey === 'none' ||
+        step.portraitKey === 's4_grazi_adult' ||
+        step.portraitKey === 's4_ariel_adult' ||
+        step.portraitKey === 'alternating_grazi_ariel',
+    );
+    if (step.speaker) {
+      assert.notEqual(step.speaker, 'grazi');
+      assert.notEqual(step.speaker, 'ariel');
+    }
+  }
+  const step2Snap = getCutsceneTimelineSnapshot(STAGE4_PREGNANCY_REVEAL_TIMELINE, 2.5);
+  const step6Snap = getCutsceneTimelineSnapshot(STAGE4_PREGNANCY_REVEAL_TIMELINE, 19.0);
+  const step8Snap = getCutsceneTimelineSnapshot(STAGE4_PREGNANCY_REVEAL_TIMELINE, 29.5);
+  assert.equal(step2Snap.activePortraitKey, 's4_grazi_adult');
+  assert.equal(step6Snap.activePortraitKey, 's4_ariel_adult');
+  assert.equal(step8Snap.activePortraitKey, 's4_ariel_adult');
 });
 
 
