@@ -51,18 +51,26 @@ import npcDjUrl from '../assets/images/npc_dj_skin_1795049132367.jpg';
 import npcGirlUrl from '../assets/images/npc_girl_skin_1795049131974.jpg';
 import npcVendorUrl from '../assets/images/npc_vendor_sprite_1795121208248.jpg';
 import s4ArielAdultUrl from '../assets/images/s4_ariel_adult_sprite_1795202479243.jpg';
+import s4ArielAdultWalkSheetUrl from '../assets/images/s4_ariel_adult_walk_sheet.png';
 import s4Cristian5yoUrl from '../assets/images/s4_cristian_5yo_sprite_1795202486514.jpg';
 import s4Cristian7yoUrl from '../assets/images/s4_cristian_7yo_sprite_1795202453105.jpg';
 import s4CristianBabyWalkSheetUrl from '../assets/images/s4_cristian_baby_sleeping_walk_sheet.png';
 import s4CristianToddlerUrl from '../assets/images/s4_cristian_toddler_sprite_1795202457641.jpg';
 import s4BicycleCoupleWalkSheetUrl from '../assets/images/s4_bicycle_couple_walk_sheet.png';
 import s4GraziAdultUrl from '../assets/images/s4_grazi_adult_sprite_1795202450326.jpg';
+import s4GraziAdultWalkSheetUrl from '../assets/images/s4_grazi_adult_walk_sheet.png';
 import s4BarManDrunkWalkSheetUrl from '../assets/images/s4_bar_man_drunk_walk_sheet.png';
 import s4GraziArielPregnantHandholdWalkSheetUrl from '../assets/images/s4_grazi_ariel_pregnant_handhold_walk_sheet.png';
 import s4GraziPregnantWalkSheetUrl from '../assets/images/s4_grazi_pregnant_walk_sheet_from_reference.png';
 import s4MotherInLawUrl from '../assets/images/s4_mother_in_law_sprite.png';
 import s4NaniUrl from '../assets/images/s4_nani_sprite_1795209660137.jpg';
 import s4PregnancyEmbraceUrl from '../assets/images/s4_pregnancy_reveal_embrace.jpg';
+import s5CristianKarateWalkSheetUrl from '../assets/images/s5_cristian_karate_walk_sheet.png';
+import s5CristianKarateKataSheetUrl from '../assets/images/s5_cristian_karate_kata_sheet.png';
+import s5LaraBabySheetUrl from '../assets/images/s5_lara_baby_sheet.png';
+import s5Lara2yoWalkSheetUrl from '../assets/images/s5_lara_2yo_walk_sheet.png';
+import s5Lara2yoDanceSheetUrl from '../assets/images/s5_lara_2yo_dance_sheet.png';
+import s5Lucas5yoWalkSheetUrl from '../assets/images/s5_lucas_5yo_walk_sheet.png';
 import {
   type ProcessedSprite,
   getCachedTransparentSprite,
@@ -141,10 +149,18 @@ const WALK_SHEET_URLS = {
   graziAriel: graziArielWalkSheetUrl,
   barMan: s4BarManDrunkWalkSheetUrl,
   s4PregnantCouple: s4GraziArielPregnantHandholdWalkSheetUrl,
+  s4ArielAdultWalk: s4ArielAdultWalkSheetUrl,
+  s4GraziAdultWalk: s4GraziAdultWalkSheetUrl,
   s4CristianBaby: s4CristianBabyWalkSheetUrl,
   s4BicycleCouple: s4BicycleCoupleWalkSheetUrl,
   lauraLeoCouple: lauraLeoWalkTogetherUrl,
   leo: leoWalkSheetUrl,
+  s5CristianKarateWalk: s5CristianKarateWalkSheetUrl,
+  s5CristianKarateKata: s5CristianKarateKataSheetUrl,
+  s5LaraBaby: s5LaraBabySheetUrl,
+  s5Lara2yoWalk: s5Lara2yoWalkSheetUrl,
+  s5Lara2yoDance: s5Lara2yoDanceSheetUrl,
+  s5Lucas5yoWalk: s5Lucas5yoWalkSheetUrl,
 } as const;
 type WalkSheetCharacter = keyof typeof WALK_SHEET_URLS;
 const walkSheetImages = new Map<WalkSheetCharacter, HTMLImageElement>();
@@ -205,10 +221,18 @@ export function preloadAllCharacterSkins(): void {
   getCharacterWalkSheetImage('graziAriel');
   getCharacterWalkSheetImage('barMan');
   getCharacterWalkSheetImage('s4PregnantCouple');
+  getCharacterWalkSheetImage('s4ArielAdultWalk');
+  getCharacterWalkSheetImage('s4GraziAdultWalk');
   getCharacterWalkSheetImage('s4CristianBaby');
   getCharacterWalkSheetImage('s4BicycleCouple');
   getCharacterWalkSheetImage('lauraLeoCouple');
   getCharacterWalkSheetImage('leo');
+  getCharacterWalkSheetImage('s5CristianKarateWalk');
+  getCharacterWalkSheetImage('s5CristianKarateKata');
+  getCharacterWalkSheetImage('s5LaraBaby');
+  getCharacterWalkSheetImage('s5Lara2yoWalk');
+  getCharacterWalkSheetImage('s5Lara2yoDance');
+  getCharacterWalkSheetImage('s5Lucas5yoWalk');
   getS4GraziPregnantWalkSheetImage();
   // Prioritize active-stage skins lazily via getSkinSprite() on first render;
   // gently trickle-preload remaining skins in background without blocking the main thread.

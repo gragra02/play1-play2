@@ -15,6 +15,7 @@ type Component = {
   height: number;
   centerX: number;
   centerY: number;
+  pixels: Set<number>;
 };
 
 const DIRECTIONS = ['down', 'left', 'up'] as const;
@@ -22,7 +23,10 @@ const FRAME_NAMES = ['idle', 'stepA', 'stepB'] as const;
 const DEFAULT_OUTPUT_BASENAME = 'grazi_walk_sheet_from_reference';
 
 function isMagentaBg(r: number, g: number, b: number): boolean {
-  return r > 175 && b > 165 && g < 125 && r - g > 70 && b - g > 60;
+  return (
+    (r > 175 && b > 165 && g < 125 && r - g > 70 && b - g > 60) ||
+    (r > 130 && b > 120 && g < 85 && r - g > 60 && b - g > 50)
+  );
 }
 
 function isMagentaFringe(r: number, g: number, b: number): boolean {
@@ -176,6 +180,11 @@ function findComponents(data: Buffer, width: number, height: number): Component[
       }
     }
 
+    const pixels = new Set<number>();
+    for (let p = 0; p < tail; p++) {
+      pixels.add(queue[p]);
+    }
+
     components.push({
       minX,
       minY,
@@ -188,6 +197,7 @@ function findComponents(data: Buffer, width: number, height: number): Component[
       height: maxY - minY + 1,
       centerX: sumX / tail,
       centerY: sumY / tail,
+      pixels,
     });
   }
 
@@ -201,9 +211,14 @@ function detectFigures(
 ): Component[] {
   const minArea = 200;
   const minHeight = Math.max(100, Math.round(imageHeight * 0.04));
+  const rowThreshold = Math.max(40, imageHeight * 0.15);
   const figures = components
     .filter((component) => component.area >= minArea && component.height >= minHeight)
-    .sort((a, b) => a.centerY - b.centerY || a.centerX - b.centerX);
+    .sort((a, b) =>
+      Math.abs(a.centerY - b.centerY) > rowThreshold
+        ? a.centerY - b.centerY
+        : a.centerX - b.centerX,
+    );
 
   if (figures.length === 0 || (requireNine && figures.length !== 9)) {
     const detected = figures.map(({ area, width, height, centerX, centerY }, index) => ({
@@ -360,7 +375,9 @@ async function main(): Promise<void> {
 
     for (let y = figure.minY; y <= figure.maxY; y++) {
       for (let x = figure.minX; x <= figure.maxX; x++) {
-        const source = (y * info.width + x) * 4;
+        const pixelIndex = y * info.width + x;
+        if (!figure.pixels.has(pixelIndex)) continue;
+        const source = pixelIndex * 4;
         if (data[source + 3] === 0) continue;
         const localX = x - figure.minX;
         const targetX = flipX ? figure.width - 1 - localX : localX;

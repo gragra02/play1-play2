@@ -1,9 +1,15 @@
 import { STAGE_2_CLOSING_QUOTE, STAGE_2_MEMORIES } from '../game/stage2Data';
 import { STAGE_3_CLOSING_QUOTE, STAGE_3_MEMORIES } from '../game/stage3Data';
 import { STAGE_4_CLOSING_QUOTE, STAGE_4_MEMORIES } from '../game/stage4Data';
+import { STAGE_5_CLOSING_QUOTE, STAGE_5_MEMORIES } from '../game/stage5Data';
 import type { SavedProgress, StageId } from '../game/types';
 
-const ALL_MEMORIES = [...STAGE_2_MEMORIES, ...STAGE_3_MEMORIES, ...STAGE_4_MEMORIES];
+const ALL_MEMORIES = [
+  ...STAGE_2_MEMORIES,
+  ...STAGE_3_MEMORIES,
+  ...STAGE_4_MEMORIES,
+  ...STAGE_5_MEMORIES,
+];
 
 interface PauseModalProps {
   stageId: StageId;
@@ -23,6 +29,7 @@ export function PauseModal({
   const isStage2 = stageId === 'stage-2';
   const isStage3 = stageId === 'stage-3';
   const isStage4 = stageId === 'stage-4';
+  const isStage5 = stageId === 'stage-5';
 
   return (
     <div
@@ -34,13 +41,15 @@ export function PauseModal({
       <div className="w-full max-w-md rpg-wood-panel p-6 text-center flex flex-col gap-5">
         <div>
           <p className="text-xs font-mono-tabular font-bold text-[#9e2e24]">
-            {isStage4
-              ? 'NOVA FASE · FASE 4: NOSSA PEQUENA GRANDE AVENTURA'
-              : isStage3
-                ? 'ANOS 90 · FASE 3: DESSA VEZ, PRA FICAR'
-                : isStage2
-                  ? 'ANOS 90 · FASE 2: ENTRE ENCONTROS E DESENCONTROS'
-                  : '1995 · FASE 1: DISCOTECA CRUZEIRO'}
+            {isStage5
+              ? 'BELA VISTA · FASE 5: BELA VISTA'
+              : isStage4
+                ? 'NOVA FASE · FASE 4: NOSSA PEQUENA GRANDE AVENTURA'
+                : isStage3
+                  ? 'ANOS 90 · FASE 3: DESSA VEZ, PRA FICAR'
+                  : isStage2
+                    ? 'ANOS 90 · FASE 2: ENTRE ENCONTROS E DESENCONTROS'
+                    : '1995 · FASE 1: DISCOTECA CRUZEIRO'}
           </p>
           <h2 id="pause-title" className="mt-1 font-pixel text-lg text-[#3d2111]">
             JOGO PAUSADO
@@ -55,7 +64,7 @@ export function PauseModal({
           >
             CONTINUAR
           </button>
-          {(isStage2 || isStage3 || isStage4) && onOpenMemories && (
+          {(isStage2 || isStage3 || isStage4 || isStage5) && onOpenMemories && (
             <button
               type="button"
               onClick={onOpenMemories}
@@ -69,13 +78,15 @@ export function PauseModal({
             onClick={onRestart}
             className="rpg-btn-wood w-full py-3 px-4 font-display-pixel text-sm cursor-pointer"
           >
-            {isStage4
-              ? 'Reiniciar Fase 4'
-              : isStage3
-                ? 'Reiniciar Fase 3'
-                : isStage2
-                  ? 'Reiniciar Fase 2'
-                  : 'Reiniciar Fase 1'}
+            {isStage5
+              ? 'Reiniciar Fase 5'
+              : isStage4
+                ? 'Reiniciar Fase 4'
+                : isStage3
+                  ? 'Reiniciar Fase 3'
+                  : isStage2
+                    ? 'Reiniciar Fase 2'
+                    : 'Reiniciar Fase 1'}
           </button>
           <button
             type="button"
@@ -176,12 +187,14 @@ interface VictoryModalProps {
   unlockedMemoriesCount: number;
   movingDeliveredCount: number;
   stage4PuzzlesSolved?: number;
+  stage5KarateHits?: number;
   elapsedSeconds: number;
   progress: SavedProgress;
   onPlayAgain: () => void;
   onContinueToStage2: () => void;
   onContinueToStage3: () => void;
   onContinueToStage4: () => void;
+  onContinueToStage5?: () => void;
   onOpenMemories: () => void;
   onExitToTitle: () => void;
 }
@@ -193,12 +206,14 @@ export function VictoryModal({
   unlockedMemoriesCount,
   movingDeliveredCount,
   stage4PuzzlesSolved = 3,
+  stage5KarateHits = 12,
   elapsedSeconds,
   progress,
   onPlayAgain,
   onContinueToStage2,
   onContinueToStage3,
   onContinueToStage4,
+  onContinueToStage5,
   onOpenMemories,
   onExitToTitle,
 }: VictoryModalProps) {
@@ -208,6 +223,98 @@ export function VictoryModal({
   const isStage2 = stageId === 'stage-2';
   const isStage3 = stageId === 'stage-3';
   const isStage4 = stageId === 'stage-4';
+  const isStage5 = stageId === 'stage-5';
+
+  if (isStage5) {
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="victory-title"
+        className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4"
+      >
+        <div className="w-full max-w-lg rpg-wood-panel p-6 sm:p-7 text-center flex flex-col gap-5">
+          <div className="flex flex-col items-center gap-2">
+            <svg viewBox="0 0 32 28" className="w-10 h-9" aria-hidden="true">
+              <rect x="4" y="2" width="8" height="8" fill="#d64e6c" />
+              <rect x="20" y="2" width="8" height="8" fill="#d64e6c" />
+              <rect x="0" y="6" width="32" height="8" fill="#d64e6c" />
+              <rect x="4" y="14" width="24" height="6" fill="#d64e6c" />
+              <rect x="10" y="20" width="12" height="4" fill="#d64e6c" />
+              <rect x="14" y="24" width="4" height="2" fill="#d64e6c" />
+            </svg>
+            <p className="text-xs font-mono-tabular font-bold text-[#9e2e24]">
+              FASE 5 CONCLUÍDA · PROGRESSO SALVO
+            </p>
+            <h2
+              id="victory-title"
+              className="font-pixel text-sm sm:text-base leading-relaxed text-[#3d2111]"
+            >
+              BELA VISTA
+            </h2>
+            <p className="text-sm text-[#5c361e] leading-relaxed max-w-md font-medium">
+              &ldquo;{STAGE_5_CLOSING_QUOTE}&rdquo;
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2.5 text-center">
+            <div className="bg-[#fff7e2] border-2 border-[#a86a3a] p-3">
+              <div className="text-[11px] font-mono-tabular font-bold text-[#7c4726]">KATA DO CRIS</div>
+              <div className="mt-1 font-mono-tabular text-lg font-bold text-[#9e2e24]">
+                {Math.min(8, stage5KarateHits)}/8
+              </div>
+            </div>
+            <div className="bg-[#fff7e2] border-2 border-[#a86a3a] p-3">
+              <div className="text-[11px] font-mono-tabular font-bold text-[#7c4726]">LEMBRANÇAS</div>
+              <div className="mt-1 font-mono-tabular text-lg font-bold text-[#b87114]">
+                {unlockedMemoriesCount}/{ALL_MEMORIES.length}
+              </div>
+            </div>
+            <div className="bg-[#fff7e2] border-2 border-[#a86a3a] p-3">
+              <div className="text-[11px] font-mono-tabular font-bold text-[#7c4726]">TEMPO</div>
+              <div className="mt-1 font-mono-tabular text-lg font-bold text-[#3d2111]">
+                {timeFormatted}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-[#edd8ad] border-2 border-[#a86a3a] px-4 py-2 text-xs text-[#4b2816] font-medium">
+            Próximo capítulo em preparação:{' '}
+            <span className="text-[#9e2e24] font-bold">
+              Fase 6 — Nossa Nova Vida na Ponte do Imaruim
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2.5">
+            <button
+              type="button"
+              onClick={onOpenMemories}
+              className="rpg-btn-wood w-full py-2.5 px-4 font-display-pixel text-sm cursor-pointer"
+            >
+              Abrir Álbum de Lembranças ({unlockedMemoriesCount}/{ALL_MEMORIES.length})
+            </button>
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <button
+                type="button"
+                data-start="true"
+                onClick={onPlayAgain}
+                className="rpg-btn-gold flex-1 py-3 px-4 font-pixel text-xs cursor-pointer whitespace-nowrap"
+              >
+                JOGAR FASE 5 NOVAMENTE
+              </button>
+              <button
+                type="button"
+                onClick={onExitToTitle}
+                className="rpg-btn-wood flex-1 py-3 px-4 font-display-pixel text-sm cursor-pointer whitespace-nowrap"
+              >
+                Tela Inicial
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isStage4) {
     return (
@@ -262,7 +369,22 @@ export function VictoryModal({
             </div>
           </div>
 
+          <div className="bg-[#edd8ad] border-2 border-[#a86a3a] px-4 py-2 text-xs text-[#4b2816] font-medium">
+            Próximo capítulo liberado:{' '}
+            <span className="text-[#9e2e24] font-bold">Fase 5 — Bela Vista</span>
+          </div>
+
           <div className="flex flex-col gap-2.5">
+            {onContinueToStage5 && (
+              <button
+                type="button"
+                data-continue-stage5="true"
+                onClick={onContinueToStage5}
+                className="rpg-btn-gold w-full py-3.5 px-4 font-pixel text-xs cursor-pointer whitespace-nowrap"
+              >
+                CONTINUAR PARA FASE 5
+              </button>
+            )}
             <button
               type="button"
               onClick={onOpenMemories}

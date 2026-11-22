@@ -13,6 +13,15 @@ import {
   isStage4ExplorationPhase,
   type Stage4CutsceneCaption,
 } from '../game/stage4Rules';
+import {
+  STAGE_5_KARATE_SEQUENCES,
+  STAGE_5_KATA_MOVES,
+  STAGE_5_MEMORIES,
+} from '../game/stage5Data';
+import {
+  isStage5ExplorationPhase,
+  type Stage5CutsceneCaption,
+} from '../game/stage5Rules';
 import type { CutsceneTimelineSnapshot } from '../game/cutscene';
 import type {
   DialogueLine,
@@ -25,16 +34,21 @@ import type {
   Stage2CutsceneKind,
   Stage3CutsceneKind,
   Stage4CutsceneKind,
+  Stage5CutsceneKind,
+  Stage5KarateState,
   StageId,
 } from '../game/types';
 import { getCharacterPortraitSrc, getCutscenePortraitSrc } from './portraits';
 
 const TOTAL_MEMORIES_COUNT =
-  STAGE_2_MEMORIES.length + STAGE_3_MEMORIES.length + STAGE_4_MEMORIES.length;
+  STAGE_2_MEMORIES.length +
+  STAGE_3_MEMORIES.length +
+  STAGE_4_MEMORIES.length +
+  STAGE_5_MEMORIES.length;
 
 function normalizeStage4SpeakerId(speaker: SpeakerId | null, stageId: StageId): SpeakerId | null {
   if (!speaker) return null;
-  if (stageId === 'stage-4') {
+  if (stageId === 'stage-4' || stageId === 'stage-5') {
     if (speaker === 'grazi' || speaker === 'grazi_thought') return 'grazi_adult';
     if (speaker === 'ariel') return 'ariel_adult';
   }
@@ -44,11 +58,13 @@ function normalizeStage4SpeakerId(speaker: SpeakerId | null, stageId: StageId): 
 function inferSpeakerIdFromLabel(label?: string, stageId?: StageId): SpeakerId | null {
   if (!label) return null;
   const n = label.toLowerCase();
-  if (n.includes('cristian')) return 'cristian';
+  if (n.includes('cristian') || n.includes('cris')) return 'cristian';
+  if (n.includes('lara')) return 'lara';
+  if (n.includes('lucas')) return 'lucas';
   if (n.includes('nani') || n.includes('madrinha')) return 'nani';
   if (n.includes('senhor') && n.includes('bar')) return 'bar_man';
-  if (n.includes('grazi')) return stageId === 'stage-4' ? 'grazi_adult' : 'grazi';
-  if (n.includes('ariel')) return stageId === 'stage-4' ? 'ariel_adult' : 'ariel';
+  if (n.includes('grazi')) return stageId === 'stage-4' || stageId === 'stage-5' ? 'grazi_adult' : 'grazi';
+  if (n.includes('ariel')) return stageId === 'stage-4' || stageId === 'stage-5' ? 'ariel_adult' : 'ariel';
   if (n.includes('laura')) return 'laura';
   if (n.includes('léo') || n.includes('leo')) return 'leo';
   if (n.includes('júnior') || n.includes('junior')) return 'junior';
@@ -95,6 +111,12 @@ export interface HudSnapshot {
   stage4PuzzlePending: boolean;
   stage4PuzzleFeedback: string | null;
   stage4PuzzlesSolved: number;
+  stage5Objective: string | null;
+  stage5LocationLabel: string | null;
+  stage5EraLabel: string | null;
+  stage5Cutscene: Stage5CutsceneKind;
+  stage5Caption: Stage5CutsceneCaption | null;
+  stage5Karate: Stage5KarateState | null;
   unlockedMemoriesCount: number;
   recentMemoryTitle: string | null;
   discoveredCount: number;
@@ -115,6 +137,8 @@ interface GameHUDProps {
   onInteractOrAdvance: () => void;
   onChooseWrongHand: (choice: 'wait' | 'tell') => void;
   onChooseStage4Puzzle: (option: 'A' | 'B') => void;
+  onStage5KarateInput?: (dir: Direction) => void;
+  onStage5KarateRetry?: () => void;
   onDirectionChange: (dir: Direction | null) => void;
 }
 
@@ -193,6 +217,41 @@ function SpeakerPortrait({
           </svg>
         )}
       </div>
+    );
+  }
+
+  if (speaker === 'lara' || speaker === 'lucas') {
+    const isLara = speaker === 'lara';
+    const hair = isLara ? '#241816' : '#c8a962';
+    const shirt = isLara ? '#f49cbb' : '#f0c441';
+    return (
+      <svg
+        viewBox="0 0 32 32"
+        shapeRendering="crispEdges"
+        className="w-20 h-20 sm:w-24 sm:h-24 shrink-0 bg-[#5c351e] border-3 border-[#d49b56]"
+        aria-hidden="true"
+      >
+        <rect x="2" y="2" width="28" height="28" fill="#633a22" />
+        {isLara && (
+          <>
+            <rect x="5" y="4" width="4" height="5" fill={hair} />
+            <rect x="23" y="4" width="4" height="5" fill={hair} />
+            <rect x="8" y="6" width="2" height="2" fill="#f49cbb" />
+            <rect x="22" y="6" width="2" height="2" fill="#f49cbb" />
+          </>
+        )}
+        <path d="M9 5h14v5H9z" fill={hair} />
+        <path d="M9 10h14v9h-1v3h-2v1h-2v1h-4v-1h-2v-1h-2v-3H9v-9z" fill="#f2c4a2" />
+        <AmbientNpcFaceOverlay
+          browColor={hair}
+          irisColor="#4a2b1c"
+          pupilColor="#1f110a"
+          blushColor="#f298a4"
+          mouthColor="#b8525c"
+        />
+        <path d="M14 24h4v2h-4z" fill="#dfb090" />
+        <path d="M8 26h16v6H8z" fill={shirt} />
+      </svg>
     );
   }
 
@@ -286,6 +345,8 @@ export function GameHUD({
   onInteractOrAdvance,
   onChooseWrongHand,
   onChooseStage4Puzzle,
+  onStage5KarateInput,
+  onStage5KarateRetry,
   onDirectionChange,
 }: GameHUDProps) {
   const fullText = hud.activeLine?.text ?? '';
@@ -328,6 +389,302 @@ export function GameHUD({
       onInteractOrAdvance();
     }
   };
+
+  // Dedicated Stage 5 Animated Cutscene, Karate Kata Rhythm Minigame & Ending Overlays
+  if (hud.stageId === 'stage-5' && hud.stage5Cutscene !== 'none' && hud.stage5Caption && !hud.activeLine) {
+    const cap = hud.stage5Caption;
+    const isEnding = hud.stage5Cutscene === 'ponte_imaruim_ending';
+    const isKarateMinigame = hud.stage5Cutscene === 'karate_kata_minigame' && hud.stage5Karate;
+
+    if (isEnding) {
+      return (
+        <div className="fixed inset-0 z-20 flex flex-col items-center justify-between p-4 sm:p-6 pointer-events-none">
+          <div className="w-full max-w-2xl flex justify-center">
+            <div className="rpg-mahogany-panel px-4 py-2 text-center">
+              <div className="font-mono-tabular text-xs font-bold text-[#ffd166]">
+                FASE 5 · {cap.badge}
+              </div>
+            </div>
+          </div>
+
+          <div className="pointer-events-auto w-full max-w-xl rpg-wood-panel px-6 py-4 sm:px-8 sm:py-5 text-center flex flex-col items-center gap-4 mb-1">
+            <p className="text-base sm:text-lg font-semibold text-[#3d2111] leading-relaxed">
+              &ldquo;{cap.text}&rdquo;
+            </p>
+            {cap.canFinishEnding && (
+              <button
+                type="button"
+                data-finish-stage5="true"
+                onClick={onInteractOrAdvance}
+                className="rpg-btn-gold px-6 py-2.5 font-pixel text-xs sm:text-sm cursor-pointer whitespace-nowrap"
+              >
+                CONCLUIR FASE 5 [ESPAÇO]
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const resolvedSpeakerId = normalizeStage4SpeakerId(
+      cap.speakerId ?? inferSpeakerIdFromLabel(cap.speaker, hud.stageId),
+      hud.stageId,
+    );
+
+    if (isKarateMinigame && hud.stage5Karate) {
+      const k = hud.stage5Karate;
+      const expectedStep = STAGE_5_KATA_MOVES[k.moveIndex] ?? null;
+      const inSweetSpot = k.ringProgress >= 0.55 && k.ringProgress <= 0.94;
+      void STAGE_5_KARATE_SEQUENCES;
+
+      return (
+        <div className="fixed inset-0 z-20 pointer-events-none flex flex-col justify-between p-3 sm:p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="rpg-mahogany-panel px-3.5 py-2 pointer-events-auto">
+              <div className="font-mono-tabular text-[11px] sm:text-xs font-bold text-[#ffd166] tracking-wide">
+                {cap.badge}
+              </div>
+              {hud.stage5EraLabel && (
+                <div className="text-[11px] text-[#faeccd]/90">{hud.stage5EraLabel}</div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 pointer-events-auto">
+              {k.arielBubbleTimer > 0 && k.arielBubbleText && (
+                <div
+                  className={`rpg-wood-panel px-3.5 py-1.5 border-2 ${
+                    k.arielBubbleText === 'ISSO!'
+                      ? 'border-[#ffd166] animate-bounce'
+                      : 'border-[#d64e6c]'
+                  }`}
+                >
+                  <span className="font-pixel text-xs text-[#9e2e24]">
+                    ARIEL: &ldquo;{k.arielBubbleText}&rdquo;
+                  </span>
+                </div>
+              )}
+              <button
+                type="button"
+                data-karate-retry="true"
+                onClick={() => onStage5KarateRetry?.()}
+                className="rpg-btn-wood px-3 py-1.5 font-display-pixel text-xs cursor-pointer whitespace-nowrap"
+              >
+                Tentar Novamente
+              </button>
+            </div>
+          </div>
+
+          <div className="w-full px-2 sm:px-6 pb-2 flex justify-center pointer-events-auto">
+            <div className="w-full max-w-2xl rpg-wood-panel px-4 py-3.5 sm:px-6 sm:py-4 flex flex-col gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-mono-tabular text-xs font-bold text-[#9e2e24]">
+                  KATA DO CRIS · RODADA {k.round}/3 · MOVIMENTO {Math.min(k.totalMoves, k.moveIndex + 1)}/{k.totalMoves}
+                </span>
+                <div className="flex items-center gap-3 font-mono-tabular text-[11px] font-bold">
+                  <span className="text-[#3d2111]">PONTOS: {k.score}</span>
+                  <span className={k.missCount <= k.maxErrorsForMedal ? 'text-[#2b6cb0]' : 'text-[#9e2e24]'}>
+                    ERROS: {k.missCount}/{k.maxErrorsForMedal} (MÁX. P/ MEDALHA)
+                  </span>
+                </div>
+              </div>
+
+              {/* 8 movements of the kata across 3 rounds */}
+              <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+                {STAGE_5_KATA_MOVES.map((step, idx) => {
+                  const done = idx < k.moveIndex;
+                  const active = idx === k.moveIndex && !k.awaitingRetry;
+                  const arrow =
+                    step.dir === 'up'
+                      ? '↑'
+                      : step.dir === 'right'
+                        ? '→'
+                        : step.dir === 'left'
+                          ? '←'
+                          : '↓';
+                  return (
+                    <div
+                      key={`kata-move-${idx}`}
+                      className={`p-1.5 border-2 text-center flex flex-col items-center gap-0.5 ${
+                        done
+                          ? 'bg-[#d5ebd4] border-[#3d7a47] text-[#1f4d28]'
+                          : active
+                            ? 'bg-[#fff2bf] border-[#9e2e24] text-[#3d2111] shadow-[0_0_0_2px_#ffd166]'
+                            : 'bg-[#ead8b1] border-[#a88257] text-[#6b4328] opacity-75'
+                      }`}
+                    >
+                      <span className="font-mono-tabular text-[9px] font-bold">
+                        R{step.round}
+                      </span>
+                      <span className="font-pixel text-xs sm:text-sm">
+                        {done ? '✓' : arrow}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {k.awaitingRetry ? (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+                  <div className="text-xs sm:text-sm font-semibold text-[#3d2111]">
+                    Ariel: &ldquo;Calma, respira! Você fez {k.score} pontos, mas teve {k.missCount} erros (máx. 2 para a medalha). Vamos tentar mais uma vez!&rdquo;
+                  </div>
+                  <button
+                    type="button"
+                    data-karate-retry-main="true"
+                    onClick={() => onStage5KarateRetry?.()}
+                    className="rpg-btn-gold px-5 py-2.5 font-pixel text-xs cursor-pointer whitespace-nowrap"
+                  >
+                    TENTAR NOVAMENTE [ESPAÇO]
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                  <div className="text-xs sm:text-sm font-semibold text-[#3d2111]">
+                    {k.lastRating ? (
+                      <span
+                        className={`font-bold mr-1.5 ${
+                          k.lastRating === 'PERFEITO!'
+                            ? 'text-[#1f7a38]'
+                            : k.lastRating === 'BOM!'
+                              ? 'text-[#b87114]'
+                              : 'text-[#9e2e24]'
+                        }`}
+                      >
+                        {k.lastRating}
+                      </span>
+                    ) : null}
+                    {expectedStep ? (
+                      <span>
+                        {expectedStep.label}{' '}
+                        <span className="font-mono-tabular text-[11px] font-bold text-[#8c4e27]">
+                          ({inSweetSpot ? '★ AGORA: PERFEITO!' : 'Círculo encolhendo...'})
+                        </span>
+                      </span>
+                    ) : (
+                      'Kata concluído!'
+                    )}
+                  </div>
+
+                  {/* Clickable / Touch Direction Buttons for the Kata Moves */}
+                  <div className="flex items-center gap-1.5">
+                    {(
+                      [
+                        { dir: 'up', label: '↑ W' },
+                        { dir: 'left', label: '← A' },
+                        { dir: 'down', label: '↓ S' },
+                        { dir: 'right', label: '→ D' },
+                      ] as const
+                    ).map((btn) => (
+                      <button
+                        key={btn.dir}
+                        type="button"
+                        data-karate-dir={btn.dir}
+                        onClick={() => onStage5KarateInput?.(btn.dir)}
+                        className={`px-3 py-2 font-mono-tabular text-xs font-bold cursor-pointer border-2 ${
+                          expectedStep?.dir === btn.dir
+                            ? 'rpg-btn-gold border-[#3d2111]'
+                            : 'rpg-btn-wood'
+                        }`}
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="fixed inset-0 z-20 pointer-events-none flex flex-col justify-between p-3 sm:p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="rpg-mahogany-panel px-3.5 py-2 pointer-events-auto">
+            <div className="font-mono-tabular text-[11px] sm:text-xs font-bold text-[#ffd166] tracking-wide">
+              {cap.badge}
+            </div>
+            {hud.stage5EraLabel && (
+              <div className="text-[11px] text-[#faeccd]/90">{hud.stage5EraLabel}</div>
+            )}
+          </div>
+          {cap.canSkipIntro && (
+            <button
+              type="button"
+              data-skip-intro="true"
+              onClick={onSkipIntro}
+              className="rpg-btn-gold px-3.5 py-2 font-display-pixel text-xs cursor-pointer pointer-events-auto whitespace-nowrap"
+            >
+              Pular Abertura [Espaço]
+            </button>
+          )}
+          {hud.stage5Cutscene === 'karate_podium' && (
+            <button
+              type="button"
+              data-karate-retry="true"
+              onClick={() => onStage5KarateRetry?.()}
+              className="rpg-btn-wood px-3.5 py-2 font-display-pixel text-xs cursor-pointer pointer-events-auto whitespace-nowrap"
+            >
+              Tentar Kata Novamente
+            </button>
+          )}
+        </div>
+
+        {resolvedSpeakerId ? (
+          <div className="w-full flex justify-center pointer-events-auto">
+            <div
+              onClick={
+                hud.stage5Cutscene === 'pregnancy_phone_call'
+                  ? onInteractOrAdvance
+                  : undefined
+              }
+              className={`w-full max-w-2xl rpg-wood-panel px-4 py-3 sm:px-5 sm:py-3.5 flex items-center gap-3.5 ${
+                hud.stage5Cutscene === 'pregnancy_phone_call' ? 'cursor-pointer' : ''
+              }`}
+            >
+              <SpeakerPortrait speaker={resolvedSpeakerId} emotion={cap.emotion} />
+              <div className="flex-1 min-w-0">
+                {cap.speaker && (
+                  <div className="font-display-pixel text-xs sm:text-sm font-bold text-[#9e2e24]">
+                    {cap.speaker}
+                  </div>
+                )}
+                {cap.stageDirection && (
+                  <p className="mt-0.5 text-xs italic font-medium text-[#6b3b1e]">
+                    {cap.stageDirection}
+                  </p>
+                )}
+                <p className="mt-1 text-sm sm:text-base font-semibold text-[#3d2111] leading-snug">
+                  &ldquo;{cap.text}&rdquo;
+                </p>
+                {hud.stage5Cutscene === 'pregnancy_phone_call' && (
+                  <div className="mt-1 text-right font-mono-tabular text-[11px] font-bold text-[#8c4e27]">
+                    {cap.isTypingComplete === false
+                      ? 'Espaço / Toque para completar'
+                      : 'Espaço / Enter / Toque ▼'}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="w-full flex justify-center">
+            <div className="w-full max-w-2xl rpg-wood-panel px-5 py-3 text-center flex flex-col items-center gap-1">
+              {cap.speaker && (
+                <span className="font-display-pixel text-xs font-bold text-[#9e2e24] tracking-wide">
+                  {cap.speaker}
+                </span>
+              )}
+              <p className="text-sm sm:text-base font-semibold text-[#3d2111] leading-snug">
+                {cap.text}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // Dedicated Stage 4 Animated Cutscene, Interactive Videogame Enigma & Ending Overlays
   if (hud.stageId === 'stage-4' && hud.stage4Cutscene !== 'none' && hud.stage4Caption && !hud.activeLine) {
@@ -985,34 +1342,43 @@ export function GameHUD({
           <div className="rpg-mahogany-panel px-2.5 py-1.5 sm:px-3.5 sm:py-2">
             <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-mono-tabular text-[#ffd166] truncate">
               <span>
-                {hud.stageId === 'stage-4'
-                  ? hud.stage4EraLabel ?? 'FAMÍLIA'
-                  : hud.stageId === 'stage-1'
-                    ? '1995'
-                    : 'ANOS 90'}
+                {hud.stageId === 'stage-5'
+                  ? hud.stage5EraLabel ?? 'BELA VISTA'
+                  : hud.stageId === 'stage-4'
+                    ? hud.stage4EraLabel ?? 'FAMÍLIA'
+                    : hud.stageId === 'stage-1'
+                      ? '1995'
+                      : 'ANOS 90'}
               </span>
               <span aria-hidden="true">·</span>
               <span className="sm:hidden">
-                {hud.stageId === 'stage-4'
-                  ? 'FASE 4'
-                  : hud.stageId === 'stage-3'
-                    ? 'FASE 3'
-                    : hud.stageId === 'stage-2'
-                      ? 'FASE 2'
-                      : 'FASE 1'}
+                {hud.stageId === 'stage-5'
+                  ? 'FASE 5'
+                  : hud.stageId === 'stage-4'
+                    ? 'FASE 4'
+                    : hud.stageId === 'stage-3'
+                      ? 'FASE 3'
+                      : hud.stageId === 'stage-2'
+                        ? 'FASE 2'
+                        : 'FASE 1'}
               </span>
               <span className="hidden sm:inline">
-                {hud.stageId === 'stage-4'
-                  ? hud.stage4LocationLabel ?? 'FASE 4: NOSSA PEQUENA GRANDE AVENTURA'
-                  : hud.stageId === 'stage-3'
-                    ? hud.stage3LocationLabel ?? 'FASE 3: DESSA VEZ, PRA FICAR'
-                    : hud.stageId === 'stage-2'
-                      ? 'FASE 2: ENTRE ENCONTROS E DESENCONTROS'
-                      : 'FASE 1: A DANÇA QUE MUDOU TUDO'}
+                {hud.stageId === 'stage-5'
+                  ? hud.stage5LocationLabel ?? 'FASE 5: BELA VISTA'
+                  : hud.stageId === 'stage-4'
+                    ? hud.stage4LocationLabel ?? 'FASE 4: NOSSA PEQUENA GRANDE AVENTURA'
+                    : hud.stageId === 'stage-3'
+                      ? hud.stage3LocationLabel ?? 'FASE 3: DESSA VEZ, PRA FICAR'
+                      : hud.stageId === 'stage-2'
+                        ? 'FASE 2: ENTRE ENCONTROS E DESENCONTROS'
+                        : 'FASE 1: A DANÇA QUE MUDOU TUDO'}
               </span>
             </div>
             <div className="mt-0.5 text-[11px] sm:text-sm font-semibold text-[#faeccd] leading-snug">
-              {hud.stage4Objective ?? hud.stage3Objective ?? getObjectiveText(hud.questPhase, hud.stageId)}
+              {hud.stage5Objective ??
+                hud.stage4Objective ??
+                hud.stage3Objective ??
+                getObjectiveText(hud.questPhase, hud.stageId)}
             </div>
           </div>
 
@@ -1066,7 +1432,10 @@ export function GameHUD({
             </div>
           )}
 
-          {(hud.stageId === 'stage-2' || hud.stageId === 'stage-3' || hud.stageId === 'stage-4') &&
+          {(hud.stageId === 'stage-2' ||
+            hud.stageId === 'stage-3' ||
+            hud.stageId === 'stage-4' ||
+            hud.stageId === 'stage-5') &&
             hud.recentMemoryTitle && (
               <div className="rpg-wood-panel px-2.5 py-1 sm:px-3 sm:py-1.5 text-[11px] sm:text-xs font-semibold text-[#3d2111] flex items-center gap-1.5">
                 <span className="font-mono-tabular font-bold text-[#9e2e24]">★ LEMBRANÇA:</span>
@@ -1076,7 +1445,10 @@ export function GameHUD({
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2 pointer-events-auto shrink-0">
-          {(hud.stageId === 'stage-2' || hud.stageId === 'stage-3' || hud.stageId === 'stage-4') && (
+          {(hud.stageId === 'stage-2' ||
+            hud.stageId === 'stage-3' ||
+            hud.stageId === 'stage-4' ||
+            hud.stageId === 'stage-5') && (
             <button
               type="button"
               tabIndex={-1}
@@ -1266,7 +1638,8 @@ export function GameHUD({
           hud.questPhase === 'explore_find_laura' ||
           isStage2ExplorationPhase(hud.questPhase) ||
           isStage3ExplorationPhase(hud.questPhase) ||
-          isStage4ExplorationPhase(hud.questPhase)) && (
+          isStage4ExplorationPhase(hud.questPhase) ||
+          isStage5ExplorationPhase(hud.questPhase)) && (
           <div
             className={`w-full flex items-end justify-between gap-4 pt-1 ${
               showTouchControls ? 'flex' : 'flex md:hidden'

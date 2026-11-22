@@ -41,6 +41,11 @@ import type { CristianAgeStage, Direction, SimulationState } from './types';
 // Young-adult Ariel and Grazi, with Cristian evolving from newborn to ~7 years.
 // ============================================================================
 
+const S4_ADULT_WALK_FRAMES = {
+  right: [0, 1, 2, 6],
+  left: [3, 4, 5, 7],
+} as const;
+
 function drawAdultAriel(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -59,6 +64,28 @@ function drawAdultAriel(
   const bob = (opts.bobY ?? 0) + (opts.isMoving ? Math.abs(step) * -1.6 * boost : 0);
   const flipX = opts.dir === 'left';
   drawShadow(ctx, x, y + 6, 10 * boost, 4 * boost);
+
+  if (opts.isMoving) {
+    const adultWalkSheet = getCharacterWalkSheetImage('s4ArielAdultWalk');
+    if (adultWalkSheet) {
+      const facing = opts.dir === 'left' ? 'left' : 'right';
+      const frames = S4_ADULT_WALK_FRAMES[facing];
+      const frameIdx =
+        ((Math.floor((opts.walkPhase ?? 0) / (Math.PI / 2)) % frames.length) +
+          frames.length) %
+        frames.length;
+      if (
+        drawWalkSheetFrame(ctx, adultWalkSheet, frames[frameIdx], x, y, 49 * boost, {
+          bobY: bob,
+        })
+      ) {
+        if (opts.embarrassed) {
+          drawArielBlush(ctx, x, y + bob, boost);
+        }
+        return;
+      }
+    }
+  }
 
   const sprite = getSkinSprite(SKIN_URLS.s4ArielAdult);
   if (sprite) {
@@ -128,6 +155,25 @@ function drawAdultGrazi(
   );
 
   const isPregnant = Boolean(opts.pregnant || opts.pregnant9m);
+  if (!isPregnant && opts.isMoving) {
+    const adultWalkSheet = getCharacterWalkSheetImage('s4GraziAdultWalk');
+    if (adultWalkSheet) {
+      const facing = opts.dir === 'left' ? 'left' : 'right';
+      const frames = S4_ADULT_WALK_FRAMES[facing];
+      const frameIdx =
+        ((Math.floor((opts.walkPhase ?? 0) / (Math.PI / 2)) % frames.length) +
+          frames.length) %
+        frames.length;
+      if (
+        drawWalkSheetFrame(ctx, adultWalkSheet, frames[frameIdx], x, y, 48 * boost, {
+          bobY: bob,
+        })
+      ) {
+        return;
+      }
+    }
+  }
+
   const pregnantWalkSheet =
     isPregnant && opts.usePregnantWalkSheet
       ? getS4GraziPregnantWalkSheetImage()

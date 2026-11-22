@@ -76,6 +76,27 @@ import {
   startStage4ToddlerHome,
   startStage4VideogameScene,
 } from './game/stage4Rules';
+import { renderStage5World } from './game/stage5Renderer';
+import {
+  advanceStage5PregnancyCallCutscene,
+  createStage5Simulation,
+  enterStage5UpstairsApartment,
+  finishStage5Ending,
+  getStage5CutsceneCaption,
+  getStage5ObjectiveText,
+  isStage5CutsceneActive,
+  restartStage5KarateMinigame,
+  startStage5ApartmentLara2yoExplore,
+  startStage5KarateMinigame,
+  startStage5LaraBabyArrival,
+  startStage5LaraPepelequinhaDance,
+  startStage5ParkReunionCutscene,
+  startStage5ParkReunionExplore,
+  startStage5PonteImaruimEnding,
+  startStage5PregnancyCall,
+  startStage5PregnancyTimePassage,
+  triggerStage5KarateInput,
+} from './game/stage5Rules';
 import { ParticlePool, renderDiscotecaWorld } from './game/sprites';
 import { STAGES, loadProgress, resetProgress, saveProgress } from './game/storage';
 import type {
@@ -135,6 +156,23 @@ function getDesiredMusicMode(sim: SimulationState): MusicMode {
     }
     return 'afternoon_warm';
   }
+  if (sim.stageId === 'stage-5' && sim.stage5) {
+    if (
+      sim.stage5.cutscene === 'pregnancy_phone_call' ||
+      sim.stage5.cutscene === 'lara_baby_arrival' ||
+      sim.stage5.cutscene === 'ponte_imaruim_ending'
+    ) {
+      return 'slow_romantic';
+    }
+    if (
+      sim.stage5.cutscene === 'karate_kata_minigame' ||
+      sim.stage5.cutscene === 'karate_podium' ||
+      sim.stage5.cutscene === 'lara_pepelequinha_dance'
+    ) {
+      return 'club';
+    }
+    return 'afternoon_warm';
+  }
   return 'club';
 }
 
@@ -189,13 +227,22 @@ function buildHudSnapshot(sim: SimulationState): HudSnapshot {
     stage4PuzzlePending: Boolean(sim.stage4?.gamePuzzlePending),
     stage4PuzzleFeedback: sim.stage4?.gamePuzzleFeedback ?? null,
     stage4PuzzlesSolved: sim.stage4?.gamePuzzleSolvedCount ?? 0,
+    stage5Objective: sim.stageId === 'stage-5' ? getStage5ObjectiveText(sim) : null,
+    stage5LocationLabel: sim.stageId === 'stage-5' ? sim.stage5?.locationLabel ?? null : null,
+    stage5EraLabel: sim.stageId === 'stage-5' ? sim.stage5?.eraLabel ?? null : null,
+    stage5Cutscene: sim.stage5?.cutscene ?? 'none',
+    stage5Caption: getStage5CutsceneCaption(sim),
+    stage5Karate: sim.stage5?.karate ?? null,
     unlockedMemoriesCount:
-      sim.stageId === 'stage-4'
-        ? sim.stage4?.unlockedMemories.length ?? 0
-        : sim.stageId === 'stage-3'
-          ? sim.stage3?.unlockedMemories.length ?? 0
-          : sim.stage2?.unlockedMemories.length ?? 0,
+      sim.stageId === 'stage-5'
+        ? sim.stage5?.unlockedMemories.length ?? 0
+        : sim.stageId === 'stage-4'
+          ? sim.stage4?.unlockedMemories.length ?? 0
+          : sim.stageId === 'stage-3'
+            ? sim.stage3?.unlockedMemories.length ?? 0
+            : sim.stage2?.unlockedMemories.length ?? 0,
     recentMemoryTitle:
+      sim.stage5?.recentMemoryTitle ??
       sim.stage4?.recentMemoryTitle ??
       sim.stage3?.recentMemoryTitle ??
       sim.stage2?.recentMemoryTitle ??
@@ -211,7 +258,39 @@ function createSimulationFromQuery(
   s2SceneParam: string | null,
   s3SceneParam: string | null,
   s4SceneParam: string | null,
+  s5SceneParam: string | null = null,
 ): SimulationState {
+  if (initialStage === 'stage-5') {
+    let sim = createStage5Simulation(
+      s5SceneParam !== null && s5SceneParam !== 'intro',
+      unlockedMemories,
+    );
+    if (!s5SceneParam || s5SceneParam === 'intro') return sim;
+    if (s5SceneParam === 'guesser') return { ...sim, activeDialogue: null };
+    if (s5SceneParam === 'apartment') {
+      return enterStage5UpstairsApartment({ ...sim, activeDialogue: null });
+    }
+    if (s5SceneParam === 'karate') return startStage5KarateMinigame(sim);
+    if (s5SceneParam === 'podium') {
+      sim = startStage5KarateMinigame(sim);
+      for (const dir of ['up', 'right', 'left', 'right', 'up', 'left', 'right', 'down'] as const) {
+        sim = triggerStage5KarateInput(sim, dir).next;
+      }
+      return sim;
+    }
+    if (s5SceneParam === 'call') return startStage5PregnancyCall(sim);
+    if (s5SceneParam === 'pregnancy_time') return startStage5PregnancyTimePassage(sim);
+    if (s5SceneParam === 'lara_baby') return startStage5LaraBabyArrival(sim);
+    if (s5SceneParam === 'lara_2yo') return startStage5ApartmentLara2yoExplore(sim, false);
+    if (s5SceneParam === 'pepelequinha') return startStage5LaraPepelequinhaDance(sim);
+    if (s5SceneParam === 'park') return startStage5ParkReunionExplore(sim, false);
+    if (s5SceneParam === 'park_cutscene') return startStage5ParkReunionCutscene(sim);
+    if (s5SceneParam === 'ending') {
+      sim = startStage5PonteImaruimEnding(sim);
+      return stepSimulationTimers(sim, 2.5);
+    }
+    return sim;
+  }
   if (initialStage === 'stage-4') {
     let sim = createStage4Simulation(
       s4SceneParam !== null && s4SceneParam !== 'pregnancy',
@@ -474,16 +553,19 @@ export default function App() {
   const autostart = params?.get('autostart') === '1';
   const stageParam = params?.get('stage');
   const queryStage: StageId =
-    stageParam === '4'
-      ? 'stage-4'
-      : stageParam === '3'
-        ? 'stage-3'
-        : stageParam === '2'
-          ? 'stage-2'
-          : 'stage-1';
+    stageParam === '5'
+      ? 'stage-5'
+      : stageParam === '4'
+        ? 'stage-4'
+        : stageParam === '3'
+          ? 'stage-3'
+          : stageParam === '2'
+            ? 'stage-2'
+            : 'stage-1';
   const s2SceneParam = params?.get('s2scene') ?? null;
   const s3SceneParam = params?.get('s3scene') ?? null;
   const s4SceneParam = params?.get('s4scene') ?? null;
+  const s5SceneParam = params?.get('s5scene') ?? null;
 
   const initialProgress = loadProgress();
   const [screenState, setScreenState] = useState<GameScreenState>(autostart ? 'playing' : 'title');
@@ -508,6 +590,7 @@ export default function App() {
           s2SceneParam,
           s3SceneParam,
           s4SceneParam,
+          s5SceneParam,
         )
       : createInitialSimulation(true),
   );
@@ -544,11 +627,13 @@ export default function App() {
         const isStage2 = completedSim.stageId === 'stage-2';
         const isStage3 = completedSim.stageId === 'stage-3';
         const isStage4 = completedSim.stageId === 'stage-4';
+        const isStage5 = completedSim.stageId === 'stage-5';
         const updated: SavedProgress = {
           stage1Completed: prev.stage1Completed || isStage1,
           stage2Completed: prev.stage2Completed || isStage2,
           stage3Completed: prev.stage3Completed || isStage3,
           stage4Completed: prev.stage4Completed || isStage4,
+          stage5Completed: Boolean(prev.stage5Completed) || isStage5,
           bestDanceSync: isStage1
             ? Math.max(prev.bestDanceSync, completedSim.slowDance.syncHits)
             : prev.bestDanceSync,
@@ -562,6 +647,7 @@ export default function App() {
               ...(completedSim.stage2?.unlockedMemories ?? []),
               ...(completedSim.stage3?.unlockedMemories ?? []),
               ...(completedSim.stage4?.unlockedMemories ?? []),
+              ...(completedSim.stage5?.unlockedMemories ?? []),
             ]),
           ),
           lastCompletedAt: new Date().toISOString(),
@@ -629,6 +715,20 @@ export default function App() {
       nextHud.stage4Objective ?? '',
       nextHud.stage4LocationLabel ?? '',
       nextHud.stage4EraLabel ?? '',
+      nextHud.stage5Cutscene,
+      nextHud.stage5Caption?.text ?? '',
+      nextHud.stage5Caption?.canFinishEnding ? 1 : 0,
+      nextHud.stage5Karate?.round ?? 1,
+      nextHud.stage5Karate?.moveIndex ?? 0,
+      nextHud.stage5Karate?.score ?? 0,
+      nextHud.stage5Karate?.missCount ?? 0,
+      nextHud.stage5Karate?.lastRating ?? '',
+      nextHud.stage5Karate?.arielBubbleText ?? '',
+      nextHud.stage5Karate?.awaitingRetry ? 1 : 0,
+      Math.round((nextHud.stage5Karate?.ringProgress ?? 0) * 10),
+      nextHud.stage5Objective ?? '',
+      nextHud.stage5LocationLabel ?? '',
+      nextHud.stage5EraLabel ?? '',
       nextHud.unlockedMemoriesCount,
       nextHud.recentMemoryTitle ?? '',
       nextHud.discoveredCount,
@@ -671,13 +771,15 @@ export default function App() {
       setActiveStageId(stageId);
 
       simRef.current =
-        stageId === 'stage-4'
-          ? createStage4Simulation(skipIntro, progressRef.current.unlockedMemories)
-          : stageId === 'stage-3'
-            ? createStage3Simulation(skipIntro, progressRef.current.unlockedMemories)
-            : stageId === 'stage-2'
-              ? createStage2Simulation(skipIntro, progressRef.current.unlockedMemories)
-              : createInitialSimulation(skipIntro);
+        stageId === 'stage-5'
+          ? createStage5Simulation(skipIntro, progressRef.current.unlockedMemories)
+          : stageId === 'stage-4'
+            ? createStage4Simulation(skipIntro, progressRef.current.unlockedMemories)
+            : stageId === 'stage-3'
+              ? createStage3Simulation(skipIntro, progressRef.current.unlockedMemories)
+              : stageId === 'stage-2'
+                ? createStage2Simulation(skipIntro, progressRef.current.unlockedMemories)
+                : createInitialSimulation(skipIntro);
 
       screenRef.current = 'playing';
       document.body.dataset.state = 'playing';
@@ -731,6 +833,35 @@ export default function App() {
     [persistUnlockedMemories, syncHudIfChanged],
   );
 
+  const handleStage5KarateInput = useCallback(
+    (dir: Direction) => {
+      retroAudio.unlock();
+      const res = triggerStage5KarateInput(simRef.current, dir);
+      simRef.current = res.next;
+      if (res.hit) {
+        if (res.sequenceCompleted) {
+          retroAudio.playSlowDanceChime();
+        } else {
+          retroAudio.playInteract();
+        }
+      } else {
+        retroAudio.playInteract();
+      }
+      if (res.next.stage5) {
+        persistUnlockedMemories(res.next.stage5.unlockedMemories);
+      }
+      syncHudIfChanged(true);
+    },
+    [persistUnlockedMemories, syncHudIfChanged],
+  );
+
+  const handleStage5KarateRetry = useCallback(() => {
+    retroAudio.unlock();
+    simRef.current = restartStage5KarateMinigame(simRef.current);
+    retroAudio.playInteract();
+    syncHudIfChanged(true);
+  }, [syncHudIfChanged]);
+
   const handleExitToTitle = useCallback(() => {
     keysHeldRef.current.clear();
     touchDirRef.current = null;
@@ -773,7 +904,8 @@ export default function App() {
       sim.stage2?.cutscene === 'intro_memories' ||
       sim.stage2?.cutscene === 'breakdance_circle' ||
       sim.stage3?.cutscene === 'time_passage' ||
-      sim.stage4?.cutscene === 'home_routine'
+      sim.stage4?.cutscene === 'home_routine' ||
+      sim.stage5?.cutscene === 'bela_vista_arrival'
     ) {
       handleSkipIntro();
       return;
@@ -804,6 +936,38 @@ export default function App() {
         const finished = finishStage4Ending(sim);
         simRef.current = finished;
         completeActiveStage(finished);
+        syncHudIfChanged(true);
+      }
+      return;
+    }
+
+    if (sim.stage5?.cutscene === 'ponte_imaruim_ending' && !sim.activeDialogue) {
+      if (sim.stage5.endingReadyToFinish) {
+        const finished = finishStage5Ending(sim);
+        simRef.current = finished;
+        completeActiveStage(finished);
+        syncHudIfChanged(true);
+      }
+      return;
+    }
+
+    if (
+      sim.stage5?.cutscene === 'karate_kata_minigame' &&
+      sim.stage5.karate.awaitingRetry
+    ) {
+      handleStage5KarateRetry();
+      return;
+    }
+
+    if (sim.stage5?.cutscene === 'pregnancy_phone_call') {
+      const nextSim = advanceStage5PregnancyCallCutscene(sim);
+      if (nextSim !== sim) {
+        simRef.current = nextSim;
+        retroAudio.playInteract();
+        if (nextSim.stage5) {
+          persistUnlockedMemories(nextSim.stage5.unlockedMemories);
+        }
+        retroAudio.setMusicMode(getDesiredMusicMode(nextSim));
         syncHudIfChanged(true);
       }
       return;
@@ -844,6 +1008,9 @@ export default function App() {
       if (nextSim.stage4) {
         persistUnlockedMemories(nextSim.stage4.unlockedMemories);
       }
+      if (nextSim.stage5) {
+        persistUnlockedMemories(nextSim.stage5.unlockedMemories);
+      }
 
       if (nextSim.questPhase === 'stage_complete') {
         completeActiveStage(nextSim);
@@ -859,7 +1026,8 @@ export default function App() {
       sim.kissCutscene.active ||
       isStage2CutsceneActive(sim) ||
       isStage3CutsceneActive(sim) ||
-      isStage4CutsceneActive(sim)
+      isStage4CutsceneActive(sim) ||
+      isStage5CutsceneActive(sim)
     ) {
       return;
     }
@@ -903,12 +1071,19 @@ export default function App() {
         }
         persistUnlockedMemories(next.stage4.unlockedMemories);
       }
+      if (next.stage5) {
+        if (target.type === 'memory') {
+          retroAudio.playSlowDanceChime();
+        }
+        persistUnlockedMemories(next.stage5.unlockedMemories);
+      }
       retroAudio.setMusicMode(getDesiredMusicMode(next));
       syncHudIfChanged(true);
     }
   }, [
     completeActiveStage,
     handleSkipIntro,
+    handleStage5KarateRetry,
     persistUnlockedMemories,
     showMemoryAlbum,
     startOrRestartStage,
@@ -978,6 +1153,31 @@ export default function App() {
         }
       }
 
+      if (
+        simRef.current.stageId === 'stage-5' &&
+        simRef.current.stage5?.cutscene === 'karate_kata_minigame' &&
+        simRef.current.stage5.karate.active &&
+        !simRef.current.stage5.karate.awaitingRetry &&
+        screenRef.current === 'playing'
+      ) {
+        if (key === 'arrowup' || key === 'w') {
+          handleStage5KarateInput('up');
+          return;
+        }
+        if (key === 'arrowdown' || key === 's') {
+          handleStage5KarateInput('down');
+          return;
+        }
+        if (key === 'arrowleft' || key === 'a') {
+          handleStage5KarateInput('left');
+          return;
+        }
+        if (key === 'arrowright' || key === 'd') {
+          handleStage5KarateInput('right');
+          return;
+        }
+      }
+
       if (key === ' ' || key === 'enter' || key === 'e') {
         handleInteractOrAdvance();
         return;
@@ -1010,6 +1210,7 @@ export default function App() {
     handleChooseStage4Puzzle,
     handleChooseWrongHand,
     handleInteractOrAdvance,
+    handleStage5KarateInput,
     handleToggleMute,
     showMemoryAlbum,
     startOrRestartStage,
@@ -1210,7 +1411,9 @@ export default function App() {
 
       if (currentScreen !== 'paused') {
         particlesRef.current.update(dt);
-        if (simRef.current.stageId === 'stage-4' && currentScreen !== 'title') {
+        if (simRef.current.stageId === 'stage-5' && currentScreen !== 'title') {
+          renderStage5World(ctx, simRef.current, particlesRef.current, viewW, viewH);
+        } else if (simRef.current.stageId === 'stage-4' && currentScreen !== 'title') {
           renderStage4World(ctx, simRef.current, particlesRef.current, viewW, viewH);
         } else if (simRef.current.stageId === 'stage-3' && currentScreen !== 'title') {
           renderStage3World(ctx, simRef.current, particlesRef.current, viewW, viewH);
@@ -1274,8 +1477,20 @@ export default function App() {
           onInteractOrAdvance={handleInteractOrAdvance}
           onChooseWrongHand={handleChooseWrongHand}
           onChooseStage4Puzzle={handleChooseStage4Puzzle}
+          onStage5KarateInput={handleStage5KarateInput}
+          onStage5KarateRetry={handleStage5KarateRetry}
           onDirectionChange={(dir) => {
-            touchDirRef.current = dir;
+            if (
+              dir &&
+              simRef.current.stageId === 'stage-5' &&
+              simRef.current.stage5?.cutscene === 'karate_kata_minigame' &&
+              simRef.current.stage5.karate.active &&
+              !simRef.current.stage5.karate.awaitingRetry
+            ) {
+              handleStage5KarateInput(dir);
+            } else {
+              touchDirRef.current = dir;
+            }
           }}
         />
       )}
@@ -1298,12 +1513,16 @@ export default function App() {
           unlockedMemoriesCount={progress.unlockedMemories.length}
           movingDeliveredCount={hud.stage3MovingDelivered}
           stage4PuzzlesSolved={hud.stage4PuzzlesSolved}
+          stage5KarateHits={
+            (hud.stage5Karate?.perfectCount ?? 0) + (hud.stage5Karate?.goodCount ?? 0)
+          }
           elapsedSeconds={hud.elapsedSeconds}
           progress={progress}
           onPlayAgain={() => startOrRestartStage(activeStageId, false)}
           onContinueToStage2={() => startOrRestartStage('stage-2', false)}
           onContinueToStage3={() => startOrRestartStage('stage-3', false)}
           onContinueToStage4={() => startOrRestartStage('stage-4', false)}
+          onContinueToStage5={() => startOrRestartStage('stage-5', false)}
           onOpenMemories={() => setShowMemoryAlbum(true)}
           onExitToTitle={handleExitToTitle}
         />

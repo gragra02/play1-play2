@@ -1,11 +1,15 @@
 import { STAGE_2_MEMORIES } from '../game/stage2Data';
 import { STAGE_3_MEMORIES } from '../game/stage3Data';
 import { STAGE_4_MEMORIES } from '../game/stage4Data';
+import { STAGE_5_MEMORIES } from '../game/stage5Data';
 import type { SavedProgress, StageDefinition, StageId } from '../game/types';
 import { TITLE_PORTRAITS } from './portraits';
 
 const TOTAL_MEMORIES_COUNT =
-  STAGE_2_MEMORIES.length + STAGE_3_MEMORIES.length + STAGE_4_MEMORIES.length;
+  STAGE_2_MEMORIES.length +
+  STAGE_3_MEMORIES.length +
+  STAGE_4_MEMORIES.length +
+  STAGE_5_MEMORIES.length;
 
 interface TitleScreenProps {
   progress: SavedProgress;
@@ -27,6 +31,7 @@ export function TitleScreen({
     progress.stage2Completed ||
     progress.stage3Completed ||
     progress.stage4Completed ||
+    Boolean(progress.stage5Completed) ||
     progress.unlockedMemories.length > 0;
 
   return (
@@ -118,8 +123,8 @@ export function TitleScreen({
           </p>
         </div>
 
-        {/* Stage Cards (Fase 1, Fase 2, Fase 3 & Fase 4) */}
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-left">
+        {/* Stage Cards (Fase 1 a Fase 5) */}
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 text-left">
           {stages.map((stage) => {
             const isUnlocked = stage.unlocked;
             const isCompleted =
@@ -129,7 +134,9 @@ export function TitleScreen({
                   ? progress.stage2Completed
                   : stage.id === 'stage-3'
                     ? progress.stage3Completed
-                    : progress.stage4Completed;
+                    : stage.id === 'stage-4'
+                      ? progress.stage4Completed
+                      : Boolean(progress.stage5Completed);
             return (
               <button
                 key={stage.id}
@@ -195,9 +202,18 @@ export function TitleScreen({
             type="button"
             data-start-stage4="true"
             onClick={() => onStartStage('stage-4')}
+            className="rpg-btn-wood px-4 py-2.5 font-pixel text-[11px] cursor-pointer transition-colors whitespace-nowrap"
+          >
+            FASE 4
+          </button>
+
+          <button
+            type="button"
+            data-start-stage5="true"
+            onClick={() => onStartStage('stage-5')}
             className="rpg-btn-rose px-4 py-2.5 font-pixel text-[11px] cursor-pointer transition-colors whitespace-nowrap"
           >
-            {progress.stage4Completed ? 'FASE 4' : 'INICIAR FASE 4'}
+            {progress.stage5Completed ? 'FASE 5' : 'INICIAR FASE 5'}
           </button>
 
           <button

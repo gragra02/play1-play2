@@ -2,7 +2,7 @@ export type GameScreenState = 'title' | 'playing' | 'paused' | 'gameover';
 
 export type Direction = 'down' | 'up' | 'left' | 'right';
 
-export type StageId = 'stage-1' | 'stage-2' | 'stage-3' | 'stage-4';
+export type StageId = 'stage-1' | 'stage-2' | 'stage-3' | 'stage-4' | 'stage-5';
 
 export type QuestPhase =
   | 'intro_1995_street'
@@ -60,7 +60,22 @@ export type QuestPhase =
   | 's4_explore_toddler_home'
   | 's4_cutscene_cristian_dance'
   | 's4_videogame_interactive'
-  | 's4_ending_family_7y';
+  | 's4_ending_family_7y'
+  // Stage 5: Bela Vista (Mercado Guesser, Karate Kata, Lara's arrival, Bela Vista Park & Return to Ponte do Imaruim)
+  | 's5_intro_bela_vista'
+  | 's5_explore_guesser_street'
+  | 's5_karate_Load'
+  | 's5_karate_minigame'
+  | 's5_cutscene_karate_podium'
+  | 's5_cutscene_pregnancy_call'
+  | 's5_cutscene_pregnancy_time'
+  | 's5_prepare_lara_room'
+  | 's5_cutscene_lara_arrival'
+  | 's5_explore_apartment_lara'
+  | 's5_cutscene_lara_dance'
+  | 's5_explore_park_reunion'
+  | 's5_cutscene_park_reunion'
+  | 's5_ending_ponte_imaruim';
 
 export type ArielActivity =
   | 'breakdance_cap'
@@ -80,6 +95,8 @@ export type SpeakerId =
   | 'ariel'
   | 'ariel_adult'
   | 'cristian'
+  | 'lara'
+  | 'lucas'
   | 'nani'
   | 'bar_man'
   | 'leo'
@@ -146,7 +163,16 @@ export interface DialogueSequence {
     | 's4_start_toddler_home'
     | 's4_start_cristian_dance'
     | 's4_start_videogame_scene'
-    | 's4_start_ending_7y';
+    | 's4_start_ending_7y'
+    | 's5_start_karate_minigame'
+    | 's5_start_pregnancy_call'
+    | 's5_start_lara_arrival'
+    | 's5_start_lara_2yo_intro'
+    | 's5_start_lara_dance'
+    | 's5_start_park_reunion_explore'
+    | 's5_check_park_all_talked'
+    | 's5_start_park_reunion_cutscene'
+    | 's5_start_ending_ponte_imaruim';
 }
 
 export type TileKind =
@@ -211,6 +237,8 @@ export type NpcRole =
   | 'eloisa'
   | 'friend'
   | 'cristian'
+  | 'lara'
+  | 'lucas'
   | 'nani'
   | 'bar_man';
 
@@ -456,6 +484,105 @@ export interface Stage4State {
   endingReadyToFinish: boolean;
 }
 
+export type Stage5MapId =
+  | 'bela_vista_guesser'
+  | 'bela_vista_apartment'
+  | 'bela_vista_lara_room'
+  | 'karate_tournament_gym'
+  | 'bela_vista_park_church'
+  | 'ponte_imaruim_condo';
+
+export type Stage5CutsceneKind =
+  | 'none'
+  | 'bela_vista_arrival'
+  | 'karate_kata_minigame'
+  | 'karate_podium'
+  | 'pregnancy_phone_call'
+  | 'pregnancy_time_passage'
+  | 'lara_baby_arrival'
+  | 'lara_pepelequinha_dance'
+  | 'park_family_reunion'
+  | 'ponte_imaruim_ending';
+
+export type LaraAgeStage = 'unborn' | 'baby' | 'toddler_2y';
+
+export type KarateKataMove = 'bow' | 'punch' | 'block' | 'kick';
+
+export interface Stage5KarateStep {
+  dir: Direction;
+  move: KarateKataMove;
+  round: 1 | 2 | 3;
+  shrinkDuration: number;
+  label: string;
+}
+
+export type KarateHitRating = '' | 'PERFEITO!' | 'BOM!' | 'ERRO!';
+
+export interface Stage5KarateState {
+  active: boolean;
+  round: 1 | 2 | 3;
+  moveIndex: number; // 0..7 (8 kata movements across 3 rounds)
+  totalMoves: number; // 8
+  score: number;
+  perfectCount: number;
+  goodCount: number;
+  missCount: number;
+  maxErrorsForMedal: number; // 2
+  streak: number;
+  ringProgress: number; // 0..1 (shrinking rhythm circle: ideal hit window around 0.6..0.95)
+  currentPose: KarateKataMove;
+  poseHoldTimer: number;
+  lastRating: KarateHitRating;
+  feedbackTimer: number;
+  arielBubbleText: '' | 'ISSO!' | 'Calma, respira!';
+  arielBubbleTimer: number;
+  arielShoutCount: number;
+  screenShakeTimer: number;
+  graziEmotionalTears: boolean;
+  judgeScores: [number, number, number];
+  passedMedal: boolean;
+  awaitingRetry: boolean;
+  completed: boolean;
+}
+
+export interface Stage5PhoneCallStep {
+  id: string;
+  index: number;
+  duration: number;
+  speaker?: SpeakerId;
+  speakerName?: string;
+  emotion?: CharacterEmotion;
+  text: string;
+  stageDirection?: string;
+  typingCharsPerSecond: number;
+  arielSmiling?: boolean;
+  silentBeat?: boolean;
+}
+
+export interface Stage5State {
+  mapId: Stage5MapId;
+  locationLabel: string;
+  eraLabel: string;
+  cutscene: Stage5CutsceneKind;
+  cutsceneElapsed: number;
+  cameraFocusX: number;
+  cameraFocusY: number;
+  cameraZoom: number;
+  graziPregnant: boolean;
+  lara_announced: boolean;
+  nurseryStage: number; // 0 empty room -> 1 berço montado -> 2 móbile instalado -> 3 enxoval rosa e branco pronto
+  laraAge: LaraAgeStage;
+  talkedToCristianBelaVista: boolean;
+  karate: Stage5KarateState;
+  watchedLaraDance: boolean;
+  talkedToCristianAndLucasInPark: boolean;
+  parkTalkedTo: Array<'laura' | 'cristian' | 'lucas' | 'lara'>;
+  unlockedMemories: string[];
+  recentMemoryTitle: string | null;
+  recentMemoryTimer: number;
+  endingReadyToFinish: boolean;
+}
+
 export interface StageDefinition {
   id: StageId;
   number: number;
@@ -470,6 +597,7 @@ export interface SavedProgress {
   stage2Completed: boolean;
   stage3Completed: boolean;
   stage4Completed: boolean;
+  stage5Completed?: boolean;
   bestDanceSync: number;
   totalPlays: number;
   discoveredProps: string[];
@@ -491,6 +619,7 @@ export interface SimulationState {
   stage2: Stage2State | null;
   stage3: Stage3State | null;
   stage4: Stage4State | null;
+  stage5?: Stage5State | null;
   elapsedSeconds: number;
   beatTimer: number;
   discoveredProps: string[];

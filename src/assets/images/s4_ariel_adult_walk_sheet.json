@@ -1,0 +1,105 @@
+{
+  "image": "s4_ariel_adult_walk_sheet.png",
+  "columns": 3,
+  "rows": [
+    {
+      "direction": "down",
+      "frames": [
+        "idle",
+        "stepA",
+        "stepB"
+      ],
+      "available": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "direction": "left",
+      "frames": [
+        "idle",
+        "stepA",
+        "stepB"
+      ],
+      "available": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "direction": "up",
+      "frames": [
+        "idle",
+        "stepA",
+        "stepB"
+      ],
+      "available": [
+        true,
+        true,
+        false
+      ]
+    }
+  ],
+  "cell": {
+    "width": 180,
+    "height": 413
+  },
+  "frameMap": [
+    {
+      "cell": 0,
+      "sourceComponent": 0,
+      "mirrored": false,
+      "available": true
+    },
+    {
+      "cell": 1,
+      "sourceComponent": 1,
+      "mirrored": false,
+      "available": true
+    },
+    {
+      "cell": 2,
+      "sourceComponent": 2,
+      "mirrored": false,
+      "available": true
+    },
+    {
+      "cell": 3,
+      "sourceComponent": 4,
+      "mirrored": false,
+      "available": true
+    },
+    {
+      "cell": 4,
+      "sourceComponent": 5,
+      "mirrored": false,
+      "available": true
+    },
+    {
+      "cell": 5,
+      "sourceComponent": 6,
+      "mirrored": false,
+      "available": true
+    },
+    {
+      "cell": 6,
+      "sourceComponent": 3,
+      "mirrored": false,
+      "available": true
+    },
+    {
+      "cell": 7,
+      "sourceComponent": 7,
+      "mirrored": false,
+      "available": true
+    },
+    {
+      "cell": 8,
+      "sourceComponent": null,
+      "mirrored": false,
+      "available": false
+    }
+  ]
+}

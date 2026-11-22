@@ -18,8 +18,13 @@ import s4MaternidadeCarmelaDutraUrl from '../assets/images/s4_maternidade_carmel
 import s4MeiaAguaInteriorUrl from '../assets/images/s4_meia_agua_interior_1795202449437.jpg';
 import s4MomsHouseYardUrl from '../assets/images/s4_moms_house_yard_1795202453174.jpg';
 import s4NeighborhoodBikeRoadUrl from '../assets/images/s4_neighborhood_bike_road_1795202449685.jpg';
+import s5ApartamentoSalaBelaVistaUrl from '../assets/images/apartamento_sala_bela_vista.png';
+import s5BelaVistaGuesserUrl from '../assets/images/s5_bela_vista_guesser.jpg';
+import s5BelaVistaParkChurchUrl from '../assets/images/s5_bela_vista_park_church.jpg';
+import s5KarateChampionshipGymUrl from '../assets/images/s5_karate_championship_gym.jpg';
+import s5PonteImaruimCondoUrl from '../assets/images/s5_ponte_imaruim_condo.jpg';
 import salaEstarNoiteFilmeUrl from '../assets/images/sala_estar_noite_filme_1795121344494.jpg';
-import type { Stage3MapId, Stage4MapId } from './types';
+import type { Stage3MapId, Stage4MapId, Stage5MapId } from './types';
 
 const STAGE3_BACKDROP_URLS: Record<Stage3MapId, string> = {
   neighborhood_street: caminhoNovoStreetUrl,
@@ -38,6 +43,15 @@ const STAGE4_BACKDROP_URLS: Record<Stage4MapId, string> = {
   meia_agua_interior: s4MeiaAguaInteriorUrl,
 };
 
+const STAGE5_BACKDROP_URLS: Record<Stage5MapId, string> = {
+  bela_vista_guesser: s5BelaVistaGuesserUrl,
+  bela_vista_apartment: s5ApartamentoSalaBelaVistaUrl,
+  bela_vista_lara_room: s5ApartamentoSalaBelaVistaUrl,
+  karate_tournament_gym: s5KarateChampionshipGymUrl,
+  bela_vista_park_church: s5BelaVistaParkChurchUrl,
+  ponte_imaruim_condo: s5PonteImaruimCondoUrl,
+};
+
 const ALL_ENVIRONMENT_URLS: string[] = [
   discotecaExteriorUrl,
   discotecaInteriorUrl,
@@ -53,6 +67,11 @@ const ALL_ENVIRONMENT_URLS: string[] = [
   s4CristianCribRoomUrl,
   s4BackyardLotUrl,
   s4MeiaAguaInteriorUrl,
+  s5BelaVistaGuesserUrl,
+  s5ApartamentoSalaBelaVistaUrl,
+  s5KarateChampionshipGymUrl,
+  s5BelaVistaParkChurchUrl,
+  s5PonteImaruimCondoUrl,
 ];
 
 const loadedImages = new Map<string, HTMLImageElement>();
@@ -97,6 +116,10 @@ export function getStage3MapBackdrop(mapId: Stage3MapId): HTMLImageElement | nul
 
 export function getStage4MapBackdrop(mapId: Stage4MapId): HTMLImageElement | null {
   return getOrLoadImage(STAGE4_BACKDROP_URLS[mapId]);
+}
+
+export function getStage5MapBackdrop(mapId: Stage5MapId): HTMLImageElement | null {
+  return getOrLoadImage(STAGE5_BACKDROP_URLS[mapId]);
 }
 
 export function getCaminhoNovoTravelBackdrop(): HTMLImageElement | null {

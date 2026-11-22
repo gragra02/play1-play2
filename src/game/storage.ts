@@ -7,6 +7,7 @@ export const DEFAULT_PROGRESS: SavedProgress = {
   stage2Completed: false,
   stage3Completed: false,
   stage4Completed: false,
+  stage5Completed: false,
   bestDanceSync: 0,
   totalPlays: 0,
   discoveredProps: [],
@@ -47,6 +48,14 @@ export const STAGES: StageDefinition[] = [
     location: 'A Casa da Mãe, a Meia-Água e a Infância do Cristian',
     unlocked: true,
   },
+  {
+    id: 'stage-5',
+    number: 5,
+    year: 'Bela Vista',
+    title: 'Bela Vista',
+    location: 'O Mercado Guesser, o Karatê, a Chegada da Lara e a Volta à Ponte do Imaruim',
+    unlocked: true,
+  },
 ];
 
 export function loadProgress(): SavedProgress {
@@ -62,6 +71,7 @@ export function loadProgress(): SavedProgress {
       stage2Completed: Boolean(parsed.stage2Completed),
       stage3Completed: Boolean(parsed.stage3Completed),
       stage4Completed: Boolean(parsed.stage4Completed),
+      stage5Completed: Boolean(parsed.stage5Completed),
       bestDanceSync: typeof parsed.bestDanceSync === 'number' ? parsed.bestDanceSync : 0,
       totalPlays: typeof parsed.totalPlays === 'number' ? parsed.totalPlays : 0,
       discoveredProps: Array.isArray(parsed.discoveredProps)

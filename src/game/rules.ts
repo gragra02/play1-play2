@@ -33,6 +33,16 @@ import {
   stepStage4Simulation,
   triggerStage4Interaction,
 } from './stage4Rules';
+import {
+  findNearestStage5Interactable,
+  getStage5ObjectiveText,
+  handleStage5DialogueComplete,
+  isStage5CutsceneActive,
+  moveStage5Player,
+  skipStage5Intro,
+  stepStage5Simulation,
+  triggerStage5Interaction,
+} from './stage5Rules';
 import { STAGE_1_DIALOGUES } from './story';
 import type {
   DialogueLine,
@@ -211,6 +221,9 @@ export function isStage2ExplorationPhase(phase: SimulationState['questPhase']): 
 }
 
 export function skipIntroCutscene(state: SimulationState): SimulationState {
+  if (state.stageId === 'stage-5') {
+    return skipStage5Intro(state);
+  }
   if (state.stageId === 'stage-4') {
     return skipStage4Intro(state);
   }
@@ -313,6 +326,9 @@ export function movePlayer(
   inputY: number,
   dt: number,
 ): SimulationState {
+  if (state.stageId === 'stage-5') {
+    return moveStage5Player(state, inputX, inputY, dt);
+  }
   if (state.stageId === 'stage-4') {
     return moveStage4Player(state, inputX, inputY, dt);
   }
@@ -395,6 +411,9 @@ export interface InteractableTarget {
 }
 
 export function findNearestInteractable(state: SimulationState): InteractableTarget | null {
+  if (state.stageId === 'stage-5') {
+    return findNearestStage5Interactable(state);
+  }
   if (state.stageId === 'stage-4') {
     return findNearestStage4Interactable(state);
   }
@@ -581,6 +600,9 @@ export function triggerInteraction(state: SimulationState): {
   next: SimulationState;
   target: InteractableTarget | null;
 } {
+  if (state.stageId === 'stage-5') {
+    return triggerStage5Interaction(state);
+  }
   if (state.stageId === 'stage-4') {
     return triggerStage4Interaction(state);
   }
@@ -776,6 +798,9 @@ export function advanceDialogue(state: SimulationState): SimulationState {
     player: { ...state.player, reactionEmotion: 'none' },
   };
 
+  if (state.stageId === 'stage-5') {
+    return handleStage5DialogueComplete(baseCleared, completedDialogueId, action);
+  }
   if (state.stageId === 'stage-4') {
     return handleStage4DialogueComplete(baseCleared, completedDialogueId, action);
   }
@@ -1862,6 +1887,10 @@ export function stepSimulationTimers(state: SimulationState, dt: number): Simula
     next = stepStage4Simulation(next, dt);
   }
 
+  if (next.stageId === 'stage-5' && next.stage5) {
+    next = stepStage5Simulation(next, dt);
+  }
+
   return next;
 }
 
@@ -1869,6 +1898,9 @@ export function getObjectiveText(
   questPhase: SimulationState['questPhase'],
   stageId: SimulationState['stageId'] = 'stage-1',
 ): string {
+  if (stageId === 'stage-5' && questPhase !== 'stage_complete') {
+    return 'Explore o Bela Vista e viva os momentos em família';
+  }
   switch (questPhase) {
     case 'intro_1995_street':
       return '1995 · Ponte do Imaruim · Danceteria Cruzeiro';
@@ -1974,12 +2006,16 @@ export function getObjectiveText(
     case 's4_ending_family_7y':
       return 'Cristian aos ~7 anos · Nossa Pequena Grande Aventura';
     case 'stage_complete':
-      return stageId === 'stage-4'
-        ? 'Fase 4 concluída!'
-        : stageId === 'stage-3'
-          ? 'Fase 3 concluída!'
-          : stageId === 'stage-2'
-            ? 'Fase 2 concluída!'
-            : 'Fase 1 concluída!';
+      return stageId === 'stage-5'
+        ? 'Fase 5 concluída!'
+        : stageId === 'stage-4'
+          ? 'Fase 4 concluída!'
+          : stageId === 'stage-3'
+            ? 'Fase 3 concluída!'
+            : stageId === 'stage-2'
+              ? 'Fase 2 concluída!'
+              : 'Fase 1 concluída!';
+    default:
+      return getStage5ObjectiveText({ stageId, questPhase } as SimulationState) || 'Fase 5 · Bela Vista';
   }
 }
