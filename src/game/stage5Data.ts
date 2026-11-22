@@ -130,9 +130,9 @@ export const STAGE_5_MEMORIES: Stage5MemoryItem[] = [
     description:
       'No parque com pista de skate e parquinho colorido em frente à igreja do Bela Vista, Grazi e Laura reuniram o Cris, a pequena Lara e o primo Lucas, de 5 anos, loirinho de cabelo cacheado.',
     stageNumber: 5,
-    mapId: 'bela_vista_park_church',
-    x: 11.5 * TILE_SIZE,
-    y: 10.8 * TILE_SIZE,
+    mapId: 'parquinho_igreja',
+    x: 396,
+    y: 339,
     radius: 56,
     dialogueId: 's5_mem_parque_primos',
   },
@@ -307,10 +307,130 @@ export const STAGE5_APARTMENT_MESA_POS = { x: 5.4 * TILE_SIZE, y: 6.8 * TILE_SIZ
 export const STAGE5_APARTMENT_PHONE_POS = { x: 18.2 * TILE_SIZE, y: 10.6 * TILE_SIZE };
 export const STAGE5_NURSERY_BUILD_POS = { x: 11.8 * TILE_SIZE, y: 9.6 * TILE_SIZE };
 export const STAGE5_NURSERY_EXIT_POS = { x: 11.8 * TILE_SIZE, y: 12.7 * TILE_SIZE };
-export const STAGE5_PARK_SKATE_POS = { x: 6.4 * TILE_SIZE, y: 10.6 * TILE_SIZE };
-export const STAGE5_PARK_PLAYGROUND_POS = { x: 18.2 * TILE_SIZE, y: 10.6 * TILE_SIZE };
+// ============================================================================
+// ETAPA 7 · PARQUINHO EM FRENTE À IGREJA (mapa 'parquinho_igreja')
+// O cenário é SOMENTE o fundo pronto s5_parquinho_igreja.jpg (1264x848), esticado
+// sobre o mundo de 768x512 (24x16 tiles de 32px). 1 unidade do mundo = 1264/768
+// ≈ 1,646 px da imagem. Todas as coordenadas abaixo estão em unidades do mundo e
+// foram medidas sobre a imagem aprovada com uma grade de 16 em 16 unidades.
+// Cada zona é um retângulo { x1, y1, x2, y2 } (canto superior esquerdo → inferior direito).
+// ============================================================================
+export interface Stage5Zone {
+  id: string;
+  label: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+export interface Stage5Hotspot extends Stage5Zone {
+  /** Personagem ligado a este brinquedo (ou null para hotspots de cenário). */
+  role: 'lara' | 'lucas' | 'cristian' | 'laura' | 'grazi' | null;
+  /** Posição dos pés do personagem, ao lado do brinquedo (sem sobrepor a estrutura). */
+  standX: number;
+  standY: number;
+}
+
+/** Zonas caminháveis: a caixa de colisão do jogador precisa estar inteira dentro delas. */
+export const STAGE5_PARQUINHO_WALK_ZONES: Stage5Zone[] = [
+  { id: 'calcada', label: 'Calçada abaixo da igreja', x1: 52, y1: 200, x2: 704, y2: 237 },
+  { id: 'parque', label: 'Gramado, parquinho e pista', x1: 60, y1: 236, x2: 704, y2: 462 },
+  { id: 'praca_inferior', label: 'Piso da praça (centro-inferior)', x1: 316, y1: 460, x2: 480, y2: 508 },
+];
+
+/** Zonas bloqueadas: a caixa de colisão do jogador não pode encostar nelas. */
+export const STAGE5_PARQUINHO_BLOCKED_ZONES: Stage5Zone[] = [
+  // Fundo: igreja, gradil/muro, torre e árvores atrás dela (tudo acima da calçada)
+  { id: 'igreja', label: 'Igreja, escadaria e gradil', x1: 60, y1: 20, x2: 456, y2: 200 },
+  { id: 'torre', label: 'Torre dos sinos', x1: 458, y1: 8, x2: 536, y2: 198 },
+  { id: 'fundo_direita', label: 'Casas e palmeiras atrás', x1: 536, y1: 20, x2: 768, y2: 200 },
+  // Árvores e arbustos (somente bordas)
+  { id: 'arvores_esquerda', label: 'Árvores da borda esquerda', x1: 0, y1: 40, x2: 60, y2: 512 },
+  { id: 'arvores_direita', label: 'Árvores da borda direita', x1: 705, y1: 60, x2: 768, y2: 512 },
+  { id: 'arbusto_inf_esq', label: 'Arbusto inferior esquerdo', x1: 60, y1: 476, x2: 130, y2: 512 },
+  { id: 'arbusto_inf_centro', label: 'Arbusto inferior central', x1: 150, y1: 452, x2: 232, y2: 512 },
+  { id: 'arbusto_inf_dir', label: 'Arbusto inferior direito', x1: 543, y1: 430, x2: 672, y2: 512 },
+  // Postes, bancos, lixeiras e bebedouro (bordas)
+  { id: 'poste_esq', label: 'Poste esquerdo', x1: 56, y1: 200, x2: 80, y2: 258 },
+  { id: 'poste_dir', label: 'Poste direito', x1: 692, y1: 200, x2: 716, y2: 258 },
+  { id: 'banco_1', label: 'Banco 1 (calçada)', x1: 116, y1: 222, x2: 168, y2: 250 },
+  { id: 'banco_2', label: 'Banco 2 (calçada)', x1: 217, y1: 222, x2: 270, y2: 250 },
+  { id: 'banco_3', label: 'Banco 3 (calçada)', x1: 540, y1: 222, x2: 592, y2: 250 },
+  { id: 'banco_dir', label: 'Banco lateral direito', x1: 688, y1: 350, x2: 744, y2: 408 },
+  { id: 'lixeira_sup', label: 'Lixeira (calçada)', x1: 607, y1: 222, x2: 630, y2: 250 },
+  { id: 'lixeira_inf', label: 'Lixeira inferior', x1: 73, y1: 432, x2: 96, y2: 466 },
+  { id: 'bebedouro', label: 'Bebedouro', x1: 669, y1: 418, x2: 706, y2: 468 },
+  // Mureta do parquinho (abertura à direita y 328–356 e embaixo x 158–218)
+  { id: 'mureta_topo', label: 'Mureta (topo)', x1: 42, y1: 252, x2: 340, y2: 267 },
+  { id: 'mureta_esq', label: 'Mureta (esquerda)', x1: 40, y1: 252, x2: 74, y2: 440 },
+  { id: 'mureta_dir_sup', label: 'Mureta (direita, cima)', x1: 324, y1: 252, x2: 340, y2: 328 },
+  { id: 'mureta_dir_inf', label: 'Mureta (direita, baixo)', x1: 318, y1: 356, x2: 334, y2: 440 },
+  { id: 'mureta_inf_esq', label: 'Mureta (baixo, esquerda)', x1: 40, y1: 416, x2: 158, y2: 440 },
+  { id: 'mureta_inf_dir', label: 'Mureta (baixo, direita)', x1: 218, y1: 416, x2: 334, y2: 440 },
+  // Brinquedos (bloqueados até a mureta de trás: ninguém fica atrás da estrutura alta)
+  { id: 'balanco', label: 'Estrutura do balanço', x1: 88, y1: 262, x2: 193, y2: 348 },
+  { id: 'escorregador', label: 'Escorregador', x1: 206, y1: 262, x2: 300, y2: 348 },
+  { id: 'gangorra', label: 'Gangorra', x1: 214, y1: 358, x2: 302, y2: 402 },
+  // Pista de skate
+  { id: 'rampa_esq', label: 'Rampa esquerda', x1: 478, y1: 232, x2: 552, y2: 328 },
+  { id: 'rampa_dir', label: 'Rampa direita', x1: 619, y1: 240, x2: 698, y2: 328 },
+  { id: 'bowl', label: 'Bacia (bowl)', x1: 527, y1: 352, x2: 679, y2: 420 },
+];
+
+/** Pontos de interação invisíveis sobre cada brinquedo. */
+export const STAGE5_PARQUINHO_HOTSPOTS: Stage5Hotspot[] = [
+  { id: 'hs_balanco', label: 'Balanço · Lara', role: 'lara', x1: 88, y1: 262, x2: 193, y2: 348, standX: 150, standY: 366 },
+  { id: 'hs_escorregador', label: 'Escorregador · Lucas', role: 'lucas', x1: 206, y1: 262, x2: 300, y2: 348, standX: 200, standY: 362 },
+  { id: 'hs_pista', label: 'Pista de skate · Cris', role: 'cristian', x1: 473, y1: 270, x2: 727, y2: 436, standX: 586, standY: 338 },
+  { id: 'hs_banco_laura', label: 'Banco · Laura', role: 'laura', x1: 217, y1: 222, x2: 270, y2: 250, standX: 284, standY: 240 },
+  { id: 'hs_banco_grazi', label: 'Banco · Grazi (início)', role: 'grazi', x1: 217, y1: 222, x2: 270, y2: 250, standX: 312, standY: 240 },
+];
+
+/** Marca da foto em família: corredor livre entre o parquinho e a pista. */
+export const STAGE5_PARQUINHO_PHOTO_MARK = { x: 396, y: 339 };
+
+export function getStage5ParquinhoHotspot(id: string): Stage5Hotspot {
+  const hs = STAGE5_PARQUINHO_HOTSPOTS.find((h) => h.id === id);
+  if (!hs) throw new Error(`Hotspot do parquinho não encontrado: ${id}`);
+  return hs;
+}
+
+function pointInZone(z: Stage5Zone, x: number, y: number): boolean {
+  return x >= z.x1 && x <= z.x2 && y >= z.y1 && y <= z.y2;
+}
+
+/** A caixa (left, top, right, bottom) está inteira na área caminhável e fora das zonas bloqueadas? */
+export function isStage5ParquinhoBoxWalkable(
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+): boolean {
+  const corners: Array<[number, number]> = [
+    [left, top],
+    [right, top],
+    [left, bottom],
+    [right, bottom],
+  ];
+  for (const [cx, cy] of corners) {
+    if (!STAGE5_PARQUINHO_WALK_ZONES.some((z) => pointInZone(z, cx, cy))) return false;
+  }
+  for (const z of STAGE5_PARQUINHO_BLOCKED_ZONES) {
+    if (left < z.x2 && right > z.x1 && top < z.y2 && bottom > z.y1) return false;
+  }
+  return true;
+}
+
+const STAGE5_SKATE_HOTSPOT = getStage5ParquinhoHotspot('hs_pista');
+export const STAGE5_PARK_SKATE_POS = { x: STAGE5_SKATE_HOTSPOT.standX, y: STAGE5_SKATE_HOTSPOT.standY };
 
 export function isStage5TileSolid(mapId: Stage5MapId, col: number, row: number): boolean {
+  if (mapId === 'parquinho_igreja') {
+    const cx = col * TILE_SIZE + TILE_SIZE / 2;
+    const cy = row * TILE_SIZE + TILE_SIZE / 2;
+    return !isStage5ParquinhoBoxWalkable(cx - 1, cy - 1, cx + 1, cy + 1);
+  }
   if (col < 1 || col >= MAP_COLS - 1 || row < 1 || row >= MAP_ROWS - 1) return true;
 
   if (mapId === 'bela_vista_guesser') {
@@ -453,15 +573,19 @@ export function createStage5Npcs(
   }
 
   // park_reunion: Grazi explores Bela Vista park with Laura, Lucas (5yo), Cris and Lara (2yo)
-  // NOTE: Ariel does NOT appear in Etapa 7.
+  // NOTE: Ariel does NOT appear in Etapa 7. Each one stands beside their hotspot (STAGE5_PARQUINHO_HOTSPOTS).
+  const laura = getStage5ParquinhoHotspot('hs_banco_laura');
+  const cris = getStage5ParquinhoHotspot('hs_pista');
+  const lucas = getStage5ParquinhoHotspot('hs_escorregador');
+  const lara = getStage5ParquinhoHotspot('hs_balanco');
   return [
     {
       id: 's5_laura_park',
       name: 'Laura',
       role: 'laura',
-      x: 10.6 * TILE_SIZE,
-      y: 9.8 * TILE_SIZE,
-      dir: 'right',
+      x: laura.standX,
+      y: laura.standY,
+      dir: 'down',
       visible: true,
       interactable: true,
       variant: 0,
@@ -471,8 +595,8 @@ export function createStage5Npcs(
       id: 's5_cristian_park',
       name: 'Cris (no skate)',
       role: 'cristian',
-      x: 6.4 * TILE_SIZE,
-      y: 10.6 * TILE_SIZE,
+      x: cris.standX,
+      y: cris.standY,
       dir: 'right',
       visible: true,
       interactable: true,
@@ -483,9 +607,9 @@ export function createStage5Npcs(
       id: 's5_lucas_park',
       name: 'Lucas (5 anos)',
       role: 'lucas',
-      x: 17.6 * TILE_SIZE,
-      y: 10.7 * TILE_SIZE,
-      dir: 'left',
+      x: lucas.standX,
+      y: lucas.standY,
+      dir: 'down',
       visible: true,
       interactable: true,
       variant: 0,
@@ -495,9 +619,9 @@ export function createStage5Npcs(
       id: 's5_lara_park',
       name: 'Lara (2 anos)',
       role: 'lara',
-      x: 13.8 * TILE_SIZE,
-      y: 11.1 * TILE_SIZE,
-      dir: 'right',
+      x: lara.standX,
+      y: lara.standY,
+      dir: 'down',
       visible: true,
       interactable: true,
       variant: 0,
@@ -699,7 +823,7 @@ export const STAGE_5_DIALOGUES: Record<string, DialogueSequence> = {
         id: 's5_pi_2',
         speaker: 'grazi_adult',
         speakerName: 'Grazi',
-        text: 'Olha que fim de tarde gostoso! O Cris tá na pista de skate, o Lucas no escorregador e a Lara andando atrás deles. Vou dar uma volta pelo parquinho e conversar com cada um!',
+        text: 'Olha que fim de tarde gostoso! O Cris tá na pista de skate, o Lucas no escorregador e a Lara no balanço. Vou dar uma volta pelo parquinho e conversar com cada um!',
         emotion: 'happy',
       },
     ],
@@ -776,7 +900,7 @@ export const STAGE_5_DIALOGUES: Record<string, DialogueSequence> = {
         id: 's5_ptla_1',
         speaker: 'lara',
         speakerName: 'Lara (2 anos)',
-        text: 'Mamãe! Tô andando atrás do Cris e do Lucas aqui no parquinho!',
+        text: 'Mamãe! Olha eu aqui no balanço do parquinho!',
         emotion: 'happy',
       },
       {

@@ -22,6 +22,7 @@ import s5ApartamentoSalaBelaVistaUrl from '../assets/images/apartamento_sala_bel
 import s5BelaVistaGuesserUrl from '../assets/images/s5_bela_vista_guesser.jpg';
 import s5BelaVistaParkChurchUrl from '../assets/images/s5_bela_vista_park_church.jpg';
 import s5KarateChampionshipGymUrl from '../assets/images/s5_karate_championship_gym.jpg';
+import s5ParquinhoIgrejaUrl from '../assets/images/s5_parquinho_igreja.jpg';
 import s5PonteImaruimCondoUrl from '../assets/images/s5_ponte_imaruim_condo.jpg';
 import salaEstarNoiteFilmeUrl from '../assets/images/sala_estar_noite_filme_1795121344494.jpg';
 import type { Stage3MapId, Stage4MapId, Stage5MapId } from './types';
@@ -49,6 +50,8 @@ const STAGE5_BACKDROP_URLS: Record<Stage5MapId, string> = {
   bela_vista_lara_room: s5ApartamentoSalaBelaVistaUrl,
   karate_tournament_gym: s5KarateChampionshipGymUrl,
   bela_vista_park_church: s5BelaVistaParkChurchUrl,
+  // Etapa 7 (parquinho em frente à igreja): fundo pronto 1264x848, sem desenho por código.
+  parquinho_igreja: s5ParquinhoIgrejaUrl,
   ponte_imaruim_condo: s5PonteImaruimCondoUrl,
 };
 
@@ -71,6 +74,7 @@ const ALL_ENVIRONMENT_URLS: string[] = [
   s5ApartamentoSalaBelaVistaUrl,
   s5KarateChampionshipGymUrl,
   s5BelaVistaParkChurchUrl,
+  s5ParquinhoIgrejaUrl,
   s5PonteImaruimCondoUrl,
 ];
 

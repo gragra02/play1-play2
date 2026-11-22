@@ -17,6 +17,8 @@ import {
   STAGE_5_MEMORIES,
   STAGE_5_PHONE_CALL_STEPS,
   createStage5Npcs,
+  getStage5ParquinhoHotspot,
+  isStage5ParquinhoBoxWalkable,
   isStage5TileSolid,
 } from './stage5Data';
 import type {
@@ -912,7 +914,7 @@ export function startStage5ParkReunionExplore(
     questPhase: 's5_explore_park_reunion',
     stage5: {
       ...state.stage5,
-      mapId: 'bela_vista_park_church',
+      mapId: 'parquinho_igreja',
       locationLabel: 'Parquinho do Bela Vista · Pista de Skate em Frente à Igreja',
       eraLabel: 'Encontro no Parquinho · Grazi, Laura, Cris, Lara e Lucas (5 anos)',
       cutscene: 'none',
@@ -926,9 +928,9 @@ export function startStage5ParkReunionExplore(
     npcs: createStage5Npcs('park_reunion'),
     player: {
       ...state.player,
-      x: 9.4 * TILE_SIZE,
-      y: 9.9 * TILE_SIZE,
-      dir: 'right',
+      x: getStage5ParquinhoHotspot('hs_banco_grazi').standX,
+      y: getStage5ParquinhoHotspot('hs_banco_grazi').standY,
+      dir: 'left',
       isMoving: false,
     },
     activeDialogue: withIntroDialogue ? STAGE_5_DIALOGUES.s5_park_intro : null,
@@ -941,7 +943,7 @@ export function startStage5ParkReunionCutscene(state: SimulationState): Simulati
   const s5 = unlockStage5Memory(
     {
       ...state.stage5,
-      mapId: 'bela_vista_park_church',
+      mapId: 'parquinho_igreja',
       locationLabel: 'Parquinho do Bela Vista · Foto em Família em Frente à Igreja',
       eraLabel: 'Foto em Família · Grazi, Laura, Cris, Lara e Lucas',
       cutscene: 'park_family_reunion',
@@ -1026,6 +1028,16 @@ function canStandAtStage5(
 
   if (left < 0 || top < 0 || right > WORLD_WIDTH || bottom > WORLD_HEIGHT) {
     return false;
+  }
+
+  // Etapa 7: área de andar definida por zonas retangulares medidas sobre o fundo pronto.
+  if (mapId === 'parquinho_igreja') {
+    if (!isStage5ParquinhoBoxWalkable(left, top, right, bottom)) return false;
+    for (const npc of npcs) {
+      if (!npc.visible) continue;
+      if (Math.abs(x - npc.x) < 16 && Math.abs(y - npc.y) < 12) return false;
+    }
+    return true;
   }
 
   const minCol = Math.floor(left / TILE_SIZE);
@@ -1608,15 +1620,19 @@ export function stepStage5Simulation(state: SimulationState, dt: number): Simula
     // Etapa 7 live park movement: Cris skates on the skate track, Lucas plays on the slide, Lara walks behind them
     if (
       state.questPhase === 's5_explore_park_reunion' &&
-      s5.mapId === 'bela_vista_park_church'
+      s5.mapId === 'parquinho_igreja'
     ) {
       const tPark = state.elapsedSeconds;
-      const crisX = (6.4 + Math.sin(tPark * 1.35) * 1.4) * TILE_SIZE;
+      // Each kid stays beside their own hotspot (never on top of the equipment in the backdrop)
+      const crisHs = getStage5ParquinhoHotspot('hs_pista');
+      const lucasHs = getStage5ParquinhoHotspot('hs_escorregador');
+      const laraHs = getStage5ParquinhoHotspot('hs_balanco');
+      const crisX = crisHs.standX + Math.sin(tPark * 1.35) * 22;
       const crisDir: Direction = Math.cos(tPark * 1.35) >= 0 ? 'right' : 'left';
-      const lucasX = (17.6 + Math.sin(tPark * 1.1) * 0.65) * TILE_SIZE;
-      const lucasY = (10.6 + Math.cos(tPark * 1.1) * 0.25) * TILE_SIZE;
+      const lucasX = lucasHs.standX + Math.sin(tPark * 1.1) * 5;
+      const lucasY = lucasHs.standY + Math.cos(tPark * 1.1) * 2;
       const lucasDir: Direction = Math.cos(tPark * 1.1) >= 0 ? 'right' : 'left';
-      const laraX = (13.8 + Math.sin(tPark * 0.95 - 0.6) * 1.15) * TILE_SIZE;
+      const laraX = laraHs.standX + Math.sin(tPark * 0.95 - 0.6) * 12;
       const laraDir: Direction = Math.cos(tPark * 0.95 - 0.6) >= 0 ? 'right' : 'left';
 
       const animatedNpcs = state.npcs.map((npc) => {

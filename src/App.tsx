@@ -76,7 +76,7 @@ import {
   startStage4ToddlerHome,
   startStage4VideogameScene,
 } from './game/stage4Rules';
-import { renderStage5World } from './game/stage5Renderer';
+import { renderStage5World, toggleStage5DebugOverlay } from './game/stage5Renderer';
 import {
   advanceStage5PregnancyCallCutscene,
   createStage5Simulation,
@@ -1105,6 +1105,13 @@ export default function App() {
 
       if (key === 'm') {
         handleToggleMute();
+        return;
+      }
+
+      if (key === 'f3') {
+        // Debug overlay do parquinho (zonas caminháveis, bloqueadas e hotspots)
+        e.preventDefault();
+        toggleStage5DebugOverlay();
         return;
       }
 

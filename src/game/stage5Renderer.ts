@@ -19,10 +19,14 @@ import { drawMoodIcon } from './stage3Environments';
 import {
   STAGE5_APARTMENT_EXIT_POS,
   STAGE5_GUESSER_DOOR_POS,
-  STAGE5_PARK_SKATE_POS,
+  STAGE5_PARQUINHO_BLOCKED_ZONES,
+  STAGE5_PARQUINHO_HOTSPOTS,
+  STAGE5_PARQUINHO_PHOTO_MARK,
+  STAGE5_PARQUINHO_WALK_ZONES,
   STAGE_5_KATA_MOVES,
   STAGE_5_MEMORIES,
 } from './stage5Data';
+import type { Stage5Zone } from './stage5Data';
 import { getStage5PhoneCallSnapshot } from './stage5Rules';
 import type { Direction, KarateKataMove, SimulationState } from './types';
 
@@ -532,80 +536,6 @@ function drawMemoryMarker(
   ctx.fillRect(px(x - 4), px(y - 7 + pulse * 0.5), 8, 8);
   ctx.fillStyle = '#fff9e6';
   ctx.fillRect(px(x - 2), px(y - 5 + pulse * 0.5), 3, 3);
-  ctx.restore();
-}
-
-function drawBelaVistaPlaygroundEquipment(
-  ctx: CanvasRenderingContext2D,
-  t: number,
-): void {
-  ctx.save();
-
-  // 1. Balanço (Swing set) on the lawn near the playground fort
-  const swingX = px(15.2 * TILE_SIZE);
-  const swingY = px(9.5 * TILE_SIZE);
-  ctx.fillStyle = OUTLINE;
-  ctx.fillRect(swingX - 18, swingY - 26, 36, 4);
-  ctx.fillRect(swingX - 17, swingY - 26, 3, 28);
-  ctx.fillRect(swingX + 14, swingY - 26, 3, 28);
-  ctx.fillStyle = '#3b78b8';
-  ctx.fillRect(swingX - 16, swingY - 25, 32, 2);
-  ctx.fillRect(swingX - 16, swingY - 25, 2, 26);
-  ctx.fillRect(swingX + 14, swingY - 25, 2, 26);
-
-  // Two hanging swings gently swaying in the afternoon breeze
-  const sway = Math.round(Math.sin(t * 2.2) * 2);
-  ctx.fillStyle = '#d8dee9';
-  ctx.fillRect(swingX - 10 + sway, swingY - 23, 1, 15);
-  ctx.fillRect(swingX - 4 + sway, swingY - 23, 1, 15);
-  ctx.fillRect(swingX + 4 - sway, swingY - 23, 1, 15);
-  ctx.fillRect(swingX + 10 - sway, swingY - 23, 1, 15);
-  ctx.fillStyle = '#d64e6c';
-  ctx.fillRect(swingX - 11 + sway, swingY - 8, 8, 3);
-  ctx.fillStyle = '#ffd166';
-  ctx.fillRect(swingX + 3 - sway, swingY - 8, 8, 3);
-
-  // 2. Escorregador (Slide) next to the wooden playground fort
-  const slideX = px(17.1 * TILE_SIZE);
-  const slideY = px(10.3 * TILE_SIZE);
-  ctx.fillStyle = OUTLINE;
-  ctx.beginPath();
-  ctx.moveTo(slideX - 14, slideY - 18);
-  ctx.lineTo(slideX - 6, slideY - 18);
-  ctx.lineTo(slideX + 10, slideY + 2);
-  ctx.lineTo(slideX + 2, slideY + 2);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = '#e04f44';
-  ctx.beginPath();
-  ctx.moveTo(slideX - 13, slideY - 17);
-  ctx.lineTo(slideX - 7, slideY - 17);
-  ctx.lineTo(slideX + 9, slideY + 1);
-  ctx.lineTo(slideX + 3, slideY + 1);
-  ctx.closePath();
-  ctx.fill();
-
-  // 3. Gangorra (Seesaw) on the grass
-  const seesawX = px(12.6 * TILE_SIZE);
-  const seesawY = px(11.6 * TILE_SIZE);
-  const tiltY = Math.round(Math.sin(t * 2.5) * 2);
-  ctx.fillStyle = OUTLINE;
-  ctx.fillRect(seesawX - 3, seesawY - 5, 6, 7);
-  ctx.fillStyle = '#4a8f58';
-  ctx.fillRect(seesawX - 2, seesawY - 4, 4, 5);
-  ctx.strokeStyle = OUTLINE;
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(seesawX - 16, seesawY - 4 - tiltY);
-  ctx.lineTo(seesawX + 16, seesawY - 4 + tiltY);
-  ctx.stroke();
-  ctx.strokeStyle = '#f0b23a';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(seesawX - 15, seesawY - 4 - tiltY);
-  ctx.lineTo(seesawX + 15, seesawY - 4 + tiltY);
-  ctx.stroke();
-
   ctx.restore();
 }
 
@@ -1309,15 +1239,10 @@ export function renderStage5World(
     ctx.fillText(lyricText, bx, by - 3);
     ctx.restore();
   } else if (s5.cutscene === 'park_family_reunion') {
-    // Etapa 7 Conclusion: Wide shot Family Photo Pose in front of the church & park (NO Ariel) + Soft Camera Flash
-    drawBelaVistaPlaygroundEquipment(ctx, t);
-
-    // Late-afternoon golden hour warm glaze
-    ctx.fillStyle = 'rgba(255, 198, 112, 0.16)';
-    ctx.fillRect(0, 0, worldW, worldH);
-
-    const centerX = 12.2 * TILE_SIZE;
-    const baseY = 10.6 * TILE_SIZE;
+    // Etapa 7 Conclusion: Family Photo Pose on the free corridor of the parquinho_igreja backdrop (NO Ariel) + Soft Camera Flash.
+    // The scenery is ONLY the approved backdrop image — nothing is drawn by code here.
+    const centerX = STAGE5_PARQUINHO_PHOTO_MARK.x;
+    const baseY = STAGE5_PARQUINHO_PHOTO_MARK.y;
 
     // Still family photo pose: Grazi, Laura, Cris, Lara (2yo dressed), Lucas (5yo blond curly hair)
     drawAdultGrazi(ctx, centerX - 44, baseY, {
@@ -1417,26 +1342,8 @@ export function renderStage5World(
       }
     }
   } else {
-    if (s5.mapId === 'bela_vista_park_church') {
-      drawBelaVistaPlaygroundEquipment(ctx, t);
-      // Warm late-afternoon golden sunlight glaze over the Bela Vista church & park
-      ctx.fillStyle = 'rgba(255, 200, 118, 0.14)';
-      ctx.fillRect(0, 0, worldW, worldH);
-
-      const pulse = 0.22 + 0.1 * Math.sin(t * 3.5);
-      ctx.fillStyle = `rgba(255, 224, 130, ${pulse.toFixed(2)})`;
-      ctx.beginPath();
-      ctx.ellipse(
-        px(STAGE5_PARK_SKATE_POS.x),
-        px(STAGE5_PARK_SKATE_POS.y),
-        14,
-        6,
-        0,
-        0,
-        Math.PI * 2,
-      );
-      ctx.fill();
-    }
+    // Etapa 7 (parquinho_igreja): the scenery is ONLY the backdrop image. Characters are
+    // drawn on top, sorted by feet Y. No equipment/trees/skate track is drawn by code.
 
     type Drawable = { y: number; draw: () => void };
     const drawables: Drawable[] = [];
@@ -1447,7 +1354,7 @@ export function renderStage5World(
         y: npc.y,
         draw: () => {
           const isParkLive =
-            s5.mapId === 'bela_vista_park_church' &&
+            s5.mapId === 'parquinho_igreja' &&
             sim.questPhase === 's5_explore_park_reunion';
           if (npc.role === 'ariel') {
             drawAdultAriel(ctx, npc.x, npc.y, {
@@ -1503,6 +1410,65 @@ export function renderStage5World(
     }
   }
 
+  if (stage5DebugOverlay && s5.mapId === 'parquinho_igreja') {
+    drawParquinhoDebugOverlay(ctx, sim);
+  }
+
   particles.draw(ctx);
+  ctx.restore();
+}
+
+// ============================================================================
+// DEBUG (F3): zonas caminháveis (verde), bloqueadas (vermelho) e hotspots (amarelo)
+// desenhadas por cima do fundo do parquinho, para conferir o alinhamento com a imagem.
+// ============================================================================
+let stage5DebugOverlay = false;
+
+export function toggleStage5DebugOverlay(): boolean {
+  stage5DebugOverlay = !stage5DebugOverlay;
+  return stage5DebugOverlay;
+}
+
+function drawParquinhoDebugOverlay(ctx: CanvasRenderingContext2D, sim: SimulationState): void {
+  ctx.save();
+  ctx.lineWidth = 1;
+  ctx.font = '6px monospace';
+  ctx.textAlign = 'left';
+  const drawZone = (z: Stage5Zone, fill: string, stroke: string) => {
+    ctx.fillStyle = fill;
+    ctx.fillRect(z.x1, z.y1, z.x2 - z.x1, z.y2 - z.y1);
+    ctx.strokeStyle = stroke;
+    ctx.strokeRect(z.x1 + 0.5, z.y1 + 0.5, z.x2 - z.x1 - 1, z.y2 - z.y1 - 1);
+  };
+  for (const z of STAGE5_PARQUINHO_WALK_ZONES) {
+    drawZone(z, 'rgba(60, 220, 90, 0.22)', 'rgba(60, 220, 90, 0.9)');
+  }
+  for (const z of STAGE5_PARQUINHO_BLOCKED_ZONES) {
+    drawZone(z, 'rgba(235, 50, 50, 0.30)', 'rgba(255, 80, 80, 0.95)');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(z.id, z.x1 + 2, z.y1 + 7);
+  }
+  for (const h of STAGE5_PARQUINHO_HOTSPOTS) {
+    ctx.setLineDash([3, 2]);
+    ctx.strokeStyle = '#ffe14d';
+    ctx.strokeRect(h.x1 + 0.5, h.y1 + 0.5, h.x2 - h.x1 - 1, h.y2 - h.y1 - 1);
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ffe14d';
+    ctx.fillRect(h.standX - 2, h.standY - 2, 4, 4);
+    ctx.fillText(h.label, h.standX + 4, h.standY + 10);
+  }
+  const mark = STAGE5_PARQUINHO_PHOTO_MARK;
+  ctx.strokeStyle = '#66d9ff';
+  ctx.strokeRect(mark.x - 50, mark.y - 4, 100, 8);
+  ctx.fillStyle = '#66d9ff';
+  ctx.fillText('marca da foto', mark.x - 48, mark.y - 6);
+  // Player collision box (18x14 centered on the feet)
+  const p = sim.player;
+  ctx.strokeStyle = '#ffffff';
+  ctx.strokeRect(p.x - p.width / 2, p.y - p.height / 2, p.width, p.height);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+  ctx.fillRect(4, 4, 150, 10);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(`F3 debug · Grazi (${Math.round(p.x)}, ${Math.round(p.y)})`, 7, 11);
   ctx.restore();
 }

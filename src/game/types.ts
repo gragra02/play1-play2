@@ -490,6 +490,7 @@ export type Stage5MapId =
   | 'bela_vista_lara_room'
   | 'karate_tournament_gym'
   | 'bela_vista_park_church'
+  | 'parquinho_igreja'
   | 'ponte_imaruim_condo';
 
 export type Stage5CutsceneKind =

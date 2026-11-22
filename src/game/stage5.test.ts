@@ -351,7 +351,7 @@ test('Stage 5 Etapas 4 a 8: pregnancy time passage ("Alguns meses depois" in apa
   // Finish Lara dance cutscene -> transitions to ETAPA 7: Bela Vista Park with skate park in front of church
   sim = stepSimulationTimers(sim, 10.5);
   assert.equal(sim.questPhase, 's5_explore_park_reunion');
-  assert.equal(sim.stage5?.mapId, 'bela_vista_park_church');
+  assert.equal(sim.stage5?.mapId, 'parquinho_igreja');
   assert.equal(sim.activeDialogue?.id, 's5_park_intro');
   while (sim.activeDialogue) sim = advanceDialogue(sim);
 
