@@ -306,7 +306,56 @@ export const STAGE5_APARTMENT_TV_POS = { x: 17.6 * TILE_SIZE, y: 8.2 * TILE_SIZE
 export const STAGE5_APARTMENT_MESA_POS = { x: 5.4 * TILE_SIZE, y: 6.8 * TILE_SIZE };
 export const STAGE5_APARTMENT_PHONE_POS = { x: 18.2 * TILE_SIZE, y: 10.6 * TILE_SIZE };
 export const STAGE5_NURSERY_BUILD_POS = { x: 11.8 * TILE_SIZE, y: 9.6 * TILE_SIZE };
-export const STAGE5_NURSERY_EXIT_POS = { x: 11.8 * TILE_SIZE, y: 12.7 * TILE_SIZE };
+export const STAGE5_NURSERY_EXIT_POS = { x: 5.2 * TILE_SIZE, y: 10.8 * TILE_SIZE };
+
+// ============================================================================
+// AJUSTE 2 · QUARTO DA LARA (mapa 'bela_vista_lara_room', fundo s5_quarto_lara.jpg)
+// Zonas caminháveis, bloqueadas e hotspots medidos sobre a imagem 1264x848
+// mapeada para o mundo 768x512 (conferível com F3).
+// ============================================================================
+export const STAGE5_QUARTO_LARA_WALK_ZONES: Stage5Zone[] = [
+  { id: 'piso_central', label: 'Piso central do quarto', x1: 185, y1: 270, x2: 535, y2: 430 },
+  { id: 'corredor_porta', label: 'Entrada pela porta do quarto', x1: 120, y1: 318, x2: 205, y2: 378 },
+  { id: 'piso_frente', label: 'Frente do tapete rosa', x1: 270, y1: 420, x2: 498, y2: 468 },
+];
+
+export const STAGE5_QUARTO_LARA_BLOCKED_ZONES: Stage5Zone[] = [
+  { id: 'parede_fundo', label: 'Paredes do fundo', x1: 0, y1: 0, x2: 768, y2: 252 },
+  { id: 'parede_esq', label: 'Parede esquerda', x1: 0, y1: 0, x2: 118, y2: 512 },
+  { id: 'parede_dir', label: 'Parede direita', x1: 646, y1: 0, x2: 768, y2: 512 },
+  { id: 'comoda_lara', label: 'Cômoda branca e rosa', x1: 506, y1: 230, x2: 646, y2: 356 },
+];
+
+export const STAGE5_QUARTO_LARA_HOTSPOTS: Stage5Hotspot[] = [
+  { id: 'hs_berco_espaco', label: 'Espaço do Berço · Montagem', role: null, x1: 326, y1: 278, x2: 430, y2: 348, standX: 378, standY: 307 },
+  { id: 'hs_porta_quarto', label: 'Porta · Voltar para a Sala', role: null, x1: 100, y1: 205, x2: 182, y2: 345, standX: 166, standY: 346 },
+  { id: 'hs_comoda', label: 'Cômoda · Trocador e Roupinhas', role: null, x1: 506, y1: 230, x2: 646, y2: 356, standX: 492, standY: 332 },
+  { id: 'hs_prateleira', label: 'Prateleira · Ursinho Azul e Cestinhas', role: null, x1: 206, y1: 68, x2: 376, y2: 175, standX: 292, standY: 286 },
+  { id: 'hs_janela', label: 'Janela · Cortina Branca com Lacinhos Rosa', role: null, x1: 486, y1: 58, x2: 636, y2: 232, standX: 486, standY: 286 },
+];
+
+export function isStage5QuartoLaraBoxWalkable(
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+): boolean {
+  const corners: Array<[number, number]> = [
+    [left, top],
+    [right, top],
+    [left, bottom],
+    [right, bottom],
+  ];
+  for (const [cx, cy] of corners) {
+    if (!STAGE5_QUARTO_LARA_WALK_ZONES.some((z) => cx >= z.x1 && cx <= z.x2 && cy >= z.y1 && cy <= z.y2)) {
+      return false;
+    }
+  }
+  for (const z of STAGE5_QUARTO_LARA_BLOCKED_ZONES) {
+    if (left < z.x2 && right > z.x1 && top < z.y2 && bottom > z.y1) return false;
+  }
+  return true;
+}
 
 // ============================================================================
 // AJUSTE 3 · CHEGADA DA LARA NO BERÇO (posições e checagem F3 de sobreposição)
@@ -363,6 +412,33 @@ export function getStage5LaraArrivalFaceBoxes(crisX: number): Stage5FaceBounds[]
     getStage5CharacterFaceBounds('grazi', 'Grazi', L.grazi.x, L.grazi.y, Math.round(48 * 1.6)),
     getStage5CharacterFaceBounds('lara', 'Lara bebê', L.lara.x, L.lara.y, Math.round(20 * 1.6)),
     getStage5CharacterFaceBounds('cris', 'Cris', crisX, L.cris.y, Math.round(40 * 1.6)),
+  ];
+}
+
+// ============================================================================
+// CENA DA DANÇA "PEPELEQUINHA" (posições espaçadas sem sobreposição de personagens)
+// Grazi, Cris e Ariel ficam em semicírculo atrás/aos lados; Lara dança livre à frente.
+// ============================================================================
+export const STAGE5_PEPELEQUINHA_DANCE_LAYOUT = {
+  grazi: { x: 11.8 * TILE_SIZE - 96, y: 10.4 * TILE_SIZE - 8 },
+  cris: { x: 11.8 * TILE_SIZE - 50, y: 10.4 * TILE_SIZE - 4 },
+  ariel: { x: 11.8 * TILE_SIZE + 78, y: 10.4 * TILE_SIZE - 8 },
+  lara: { x: 11.8 * TILE_SIZE + 8, y: 10.4 * TILE_SIZE + 22 },
+} as const;
+
+export function getStage5PepelequinhaDanceFaceBoxes(swayX: number): Stage5FaceBounds[] {
+  const L = STAGE5_PEPELEQUINHA_DANCE_LAYOUT;
+  return [
+    getStage5CharacterFaceBounds('grazi', 'Grazi', L.grazi.x, L.grazi.y, Math.round(48 * 1.6)),
+    getStage5CharacterFaceBounds('cris', 'Cris', L.cris.x, L.cris.y, Math.round(40 * 1.6)),
+    getStage5CharacterFaceBounds('ariel', 'Ariel', L.ariel.x, L.ariel.y, Math.round(49 * 1.6)),
+    getStage5CharacterFaceBounds(
+      'lara',
+      'Lara (2 anos)',
+      L.lara.x + swayX,
+      L.lara.y,
+      Math.round(30 * 1.14 * 1.6),
+    ),
   ];
 }
 
@@ -519,10 +595,9 @@ export function isStage5TileSolid(mapId: Stage5MapId, col: number, row: number):
   }
 
   if (mapId === 'bela_vista_lara_room') {
-    // Simple pink-and-white baby room floor
-    if (row < 7 || row > 13) return true;
-    if (col < 6 || col > 17) return true;
-    return false;
+    const cx = col * TILE_SIZE + TILE_SIZE / 2;
+    const cy = row * TILE_SIZE + TILE_SIZE / 2;
+    return !isStage5QuartoLaraBoxWalkable(cx - 1, cy - 1, cx + 1, cy + 1);
   }
 
   if (mapId === 'karate_tournament_gym') {
@@ -610,7 +685,7 @@ export function createStage5Npcs(
         name: 'Lara (2 anos)',
         role: 'lara',
         x: 11.8 * TILE_SIZE,
-        y: 10.8 * TILE_SIZE,
+        y: 11.2 * TILE_SIZE,
         dir: 'down',
         visible: true,
         interactable: true,
@@ -621,8 +696,8 @@ export function createStage5Npcs(
         id: 's5_cristian_apt',
         name: 'Cris',
         role: 'cristian',
-        x: 9.6 * TILE_SIZE,
-        y: 10.6 * TILE_SIZE,
+        x: 9.4 * TILE_SIZE,
+        y: 10.0 * TILE_SIZE,
         dir: 'right',
         visible: true,
         interactable: true,
@@ -633,8 +708,8 @@ export function createStage5Npcs(
         id: 's5_ariel_apt',
         name: 'Ariel',
         role: 'ariel',
-        x: 14.2 * TILE_SIZE,
-        y: 10.6 * TILE_SIZE,
+        x: 14.6 * TILE_SIZE,
+        y: 10.0 * TILE_SIZE,
         dir: 'left',
         visible: true,
         interactable: true,

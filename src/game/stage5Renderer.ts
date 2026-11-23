@@ -5,8 +5,11 @@ import {
   getSkinSprite,
 } from './characterSkins';
 import {
+  getStage5ArielWorkBackdrop,
   getStage5LaraCribBody,
   getStage5LaraCribFrontRail,
+  getStage5LaraLayette,
+  getStage5LaraMobile,
   getStage5MapBackdrop,
   getStage5ParkPolaroidPhoto,
 } from './environmentArt';
@@ -29,11 +32,16 @@ import {
   STAGE5_PARQUINHO_HOTSPOTS,
   STAGE5_PARQUINHO_PHOTO_MARK,
   STAGE5_PARQUINHO_WALK_ZONES,
+  STAGE5_PEPELEQUINHA_DANCE_LAYOUT,
+  STAGE5_QUARTO_LARA_BLOCKED_ZONES,
+  STAGE5_QUARTO_LARA_HOTSPOTS,
+  STAGE5_QUARTO_LARA_WALK_ZONES,
   STAGE_5_KATA_MOVES,
   STAGE_5_MEMORIES,
   findStage5FaceOverlaps,
   getStage5CharacterFaceBounds,
   getStage5LaraArrivalFaceBoxes,
+  getStage5PepelequinhaDanceFaceBoxes,
 } from './stage5Data';
 import type { Stage5FaceBounds, Stage5Zone } from './stage5Data';
 import { getStage5PhoneCallSnapshot } from './stage5Rules';
@@ -734,6 +742,42 @@ function drawJudgeScoresBoard(
   ctx.restore();
 }
 
+function drawHorizontalStripFrame(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  frameIndex: number,
+  totalFrames: number,
+  cx: number,
+  cy: number,
+  targetH: number,
+  bobY = 0,
+): boolean {
+  if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) return false;
+  const cellW = image.naturalWidth / Math.max(1, totalFrames);
+  const cellH = image.naturalHeight;
+  const clampedIdx = Math.max(0, Math.min(totalFrames - 1, frameIndex));
+  const drawH = Math.round(targetH * GLOBAL_CHAR_SCALE);
+  const drawW = Math.round(drawH * (cellW / Math.max(1, cellH)));
+  const footY = Math.round(cy + bobY + 8.5);
+  const drawX = Math.round(cx);
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(
+    image,
+    Math.round(clampedIdx * cellW),
+    0,
+    Math.round(cellW),
+    cellH,
+    Math.round(drawX - drawW / 2),
+    footY - drawH,
+    drawW,
+    drawH,
+  );
+  ctx.restore();
+  return true;
+}
+
 function renderSplitScreenPregnancyCall(
   ctx: CanvasRenderingContext2D,
   sim: SimulationState,
@@ -743,135 +787,108 @@ function renderSplitScreenPregnancyCall(
   const H = MAP_ROWS * TILE_SIZE;
   const halfW = W / 2;
   const snap = getStage5PhoneCallSnapshot(sim);
+  const stepIndex = snap?.step.index ?? 1;
   const arielSmiling = Boolean(snap?.step.arielSmiling);
+
+  // Choose pose frame (0..2) for Grazi and Ariel from their dedicated 3-frame phone sheets
+  const graziFrame = stepIndex <= 1 ? 0 : stepIndex <= 3 ? 1 : 2;
+  const arielFrame = stepIndex <= 2 ? 0 : stepIndex === 3 ? 1 : 2;
 
   ctx.save();
   ctx.imageSmoothingEnabled = false;
 
-  // LEFT HALF: Grazi at Home in the Bela Vista Apartment above Mercado Guesser
+  // LEFT HALF: Grazi at Home in the approved Bela Vista living room backdrop
   ctx.save();
   ctx.beginPath();
   ctx.rect(0, 0, halfW, H);
   ctx.clip();
 
   const aptBackdrop = getStage5MapBackdrop('bela_vista_apartment');
-  if (aptBackdrop) {
+  if (aptBackdrop && aptBackdrop.complete && aptBackdrop.naturalWidth > 0) {
     ctx.drawImage(aptBackdrop, -60, 0, W, H);
   } else {
-    ctx.fillStyle = '#e8d5b5';
+    ctx.fillStyle = '#241812';
     ctx.fillRect(0, 0, halfW, H);
   }
 
-  // Warm afternoon apartment glow
-  ctx.fillStyle = 'rgba(255, 224, 178, 0.14)';
+  // Subtle warm afternoon light screen effect
+  ctx.fillStyle = 'rgba(255, 224, 178, 0.10)';
   ctx.fillRect(0, 0, halfW, H);
 
-  // Grazi standing by the apartment telephone holding the receiver
-  const graziX = halfW * 0.56;
-  const graziY = 10.4 * TILE_SIZE;
-  drawAdultGrazi(ctx, graziX, graziY, {
-    dir: 'right',
-    pregnant: false,
-    bobY: Math.sin(t * 2.6) * 0.8,
-    scaleBoost: 1.2,
-  });
-
-  // Telephone receiver in Grazi's hand
-  ctx.fillStyle = '#3a2d28';
-  ctx.fillRect(px(graziX + 8), px(graziY - 52), 7, 11);
-  if ((snap?.step.index ?? 1) >= 2) {
-    drawMoodIcon(ctx, graziX, graziY - 82, 'heart');
+  const graziX = halfW * 0.54;
+  const graziY = 12.6 * TILE_SIZE;
+  const graziPhoneSheet = getCharacterWalkSheetImage('s5GraziPhone');
+  if (
+    !graziPhoneSheet ||
+    !drawHorizontalStripFrame(
+      ctx,
+      graziPhoneSheet,
+      graziFrame,
+      3,
+      graziX,
+      graziY,
+      106,
+      Math.sin(t * 2.2) * 0.6,
+    )
+  ) {
+    drawAdultGrazi(ctx, graziX, graziY, {
+      dir: 'right',
+      pregnant: false,
+      bobY: Math.sin(t * 2.2) * 0.6,
+      scaleBoost: 1.3,
+    });
   }
   ctx.restore();
 
-  // RIGHT HALF: Ariel at Work receiving the call
+  // RIGHT HALF: Ariel at Work (Koerich delivery truck backdrop + red uniform phone sheet)
   ctx.save();
   ctx.beginPath();
   ctx.rect(halfW, 0, halfW, H);
   ctx.clip();
 
-  const grad = ctx.createLinearGradient(halfW, 0, halfW, H);
-  grad.addColorStop(0, '#2c3e54');
-  grad.addColorStop(0.55, '#3b526e');
-  grad.addColorStop(0.56, '#7a6855');
-  grad.addColorStop(1, '#5e4e3e');
-  ctx.fillStyle = grad;
-  ctx.fillRect(halfW, 0, halfW, H);
+  const workBackdrop = getStage5ArielWorkBackdrop();
+  if (workBackdrop && workBackdrop.complete && workBackdrop.naturalWidth > 0) {
+    // Frame the Koerich truck & courtyard cleanly inside the right half
+    const scale = Math.max(halfW / workBackdrop.naturalWidth, H / workBackdrop.naturalHeight);
+    const drawW = Math.round(workBackdrop.naturalWidth * scale);
+    const drawH = Math.round(workBackdrop.naturalHeight * scale);
+    const offsetX = Math.round(halfW + (halfW - drawW) / 2);
+    const offsetY = Math.round((H - drawH) / 2);
+    ctx.drawImage(workBackdrop, offsetX, offsetY, drawW, drawH);
+  } else {
+    ctx.fillStyle = '#1f2b3a';
+    ctx.fillRect(halfW, 0, halfW, H);
+  }
 
-  // Office window showing Bela Vista sky
-  ctx.fillStyle = OUTLINE;
-  ctx.fillRect(halfW + 110, 62, 164, 96);
-  ctx.fillStyle = '#89c4f4';
-  ctx.fillRect(halfW + 116, 68, 152, 84);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(halfW + 138, 86, 42, 14);
-  ctx.fillRect(halfW + 204, 102, 36, 12);
-  ctx.fillStyle = '#2c3e54';
-  ctx.fillRect(halfW + 190, 68, 4, 84);
-  ctx.fillRect(halfW + 116, 108, 152, 4);
-
-  // Workplace desk & telephone base
-  const deskX = halfW + 124;
-  const deskY = 10.1 * TILE_SIZE;
-  ctx.fillStyle = OUTLINE;
-  ctx.fillRect(deskX, deskY - 26, 148, 44);
-  ctx.fillStyle = '#8c5834';
-  ctx.fillRect(deskX + 3, deskY - 23, 142, 38);
-  ctx.fillStyle = '#a97148';
-  ctx.fillRect(deskX + 3, deskY - 23, 142, 10);
-
-  ctx.fillStyle = '#23272e';
-  ctx.fillRect(deskX + 22, deskY - 34, 22, 14);
-  ctx.fillStyle = '#f5f0e6';
-  ctx.fillRect(deskX + 66, deskY - 28, 32, 16);
-
-  // Ariel standing by the work desk holding the phone receiver
-  const arielX = halfW + halfW * 0.46;
-  const arielY = 10.4 * TILE_SIZE;
-  drawAdultAriel(ctx, arielX, arielY, {
-    dir: 'left',
-    bobY: arielSmiling ? Math.abs(Math.sin(t * 5.0)) * -2.2 : 0,
-    scaleBoost: 1.2,
-  });
-  ctx.fillStyle = '#23272e';
-  ctx.fillRect(px(arielX - 15), px(arielY - 54), 7, 11);
-
-  if (arielSmiling) {
-    drawMoodIcon(ctx, arielX, arielY - 84, 'heart');
-    const bx = px(arielX + 10);
-    const by = px(arielY - 104);
-    ctx.fillStyle = OUTLINE;
-    ctx.fillRect(bx - 76, by - 16, 152, 22);
-    ctx.fillStyle = '#fff5f8';
-    ctx.fillRect(bx - 74, by - 14, 148, 18);
-    ctx.fillStyle = '#c93b6b';
-    ctx.font = 'bold 9px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('♥ “ESPERO QUE SEJA MENINA!”', bx, by - 2);
+  const arielX = halfW + halfW * 0.48;
+  const arielY = 12.6 * TILE_SIZE;
+  const arielPhoneSheet = getCharacterWalkSheetImage('s5ArielPhone');
+  if (
+    !arielPhoneSheet ||
+    !drawHorizontalStripFrame(
+      ctx,
+      arielPhoneSheet,
+      arielFrame,
+      3,
+      arielX,
+      arielY,
+      108,
+      arielSmiling ? Math.sin(t * 3.0) * 0.8 : 0,
+    )
+  ) {
+    drawAdultAriel(ctx, arielX, arielY, {
+      dir: 'left',
+      bobY: arielSmiling ? Math.sin(t * 3.0) * 0.8 : 0,
+      scaleBoost: 1.3,
+    });
   }
   ctx.restore();
 
-  // Center golden split-screen divider bar + pulsing phone icon
-  ctx.fillStyle = '#24130c';
-  ctx.fillRect(halfW - 5, 0, 10, H);
-  ctx.fillStyle = '#d49b56';
+  // Clean split-screen divider line (screen effect only)
+  ctx.fillStyle = '#140c08';
   ctx.fillRect(halfW - 2, 0, 4, H);
 
-  const pulseR = 19 + Math.sin(t * 4.5) * 2.0;
-  ctx.fillStyle = '#24130c';
-  ctx.beginPath();
-  ctx.arc(halfW, H * 0.46, pulseR + 3, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#ffd166';
-  ctx.beginPath();
-  ctx.arc(halfW, H * 0.46, pulseR, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#8c1d14';
-  ctx.font = 'bold 14px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('☎', halfW, H * 0.46 + 5);
-
-  // Cinematic Letterbox bars (top and bottom) + labels
+  // Subtle vignette & letterbox bars (screen effects only)
   const barH = 36;
   ctx.fillStyle = 'rgba(10, 6, 4, 0.94)';
   ctx.fillRect(0, 0, W, barH);
@@ -882,7 +899,14 @@ function renderSplitScreenPregnancyCall(
   ctx.textAlign = 'left';
   ctx.fillText('APARTAMENTO NO BELA VISTA · GRAZI', 20, 22);
   ctx.textAlign = 'right';
-  ctx.fillText('NO SERVIÇO · ARIEL', W - 20, 22);
+  ctx.fillText('ENTREGAS KOERICH · ARIEL', W - 20, 22);
+
+  // Gentle fade-in at the start of the phone call
+  if (t < 0.7) {
+    const fadeAlpha = Math.max(0, 1 - t / 0.7);
+    ctx.fillStyle = `rgba(10, 6, 4, ${fadeAlpha.toFixed(3)})`;
+    ctx.fillRect(0, 0, W, H);
+  }
 
   ctx.restore();
 }
@@ -1252,28 +1276,61 @@ export function renderStage5World(
       drawMoodIcon(ctx, crisX, L.cris.y - 62, 'smile');
     }
   } else if (s5.cutscene === 'lara_pepelequinha_dance') {
-    const rugCenterX = 11.8 * TILE_SIZE;
-    const rugCenterY = 10.8 * TILE_SIZE;
-
-    drawAdultAriel(ctx, rugCenterX + 46, rugCenterY - 4, {
-      dir: 'left',
-      bobY: Math.sin(t * 5) * 1.0,
-    });
-    drawAdultGrazi(ctx, rugCenterX - 46, rugCenterY - 4, {
-      dir: 'right',
-      bobY: Math.sin(t * 5 + 1) * 1.0,
-    });
-
+    const L = STAGE5_PEPELEQUINHA_DANCE_LAYOUT;
     const crisLaughBob = Math.abs(Math.sin(t * 11)) * -2.8;
-    drawCristian7yo(ctx, rugCenterX - 22, rugCenterY + 2, {
-      dir: 'right',
-      bobY: crisLaughBob,
-    });
-    drawMoodIcon(ctx, rugCenterX - 22, rugCenterY - 58, 'smile');
+    const swayX = Math.sin(s5.cutsceneElapsed * 4.2) * 8;
+    const laraX = L.lara.x + swayX;
+
+    // Sort all 4 characters by feet Y: Grazi, Cris & Ariel stay behind/beside while Lara dances unobstructed in front
+    const danceDrawables: Array<{ y: number; draw: () => void }> = [
+      {
+        y: L.grazi.y,
+        draw: () => {
+          drawAdultGrazi(ctx, L.grazi.x, L.grazi.y, {
+            dir: 'right',
+            bobY: Math.sin(t * 5 + 1) * 1.0,
+          });
+        },
+      },
+      {
+        y: L.ariel.y,
+        draw: () => {
+          drawAdultAriel(ctx, L.ariel.x, L.ariel.y, {
+            dir: 'left',
+            bobY: Math.sin(t * 5) * 1.0,
+          });
+        },
+      },
+      {
+        y: L.cris.y,
+        draw: () => {
+          drawCristian7yo(ctx, L.cris.x, L.cris.y, {
+            dir: 'right',
+            bobY: crisLaughBob,
+          });
+        },
+      },
+      {
+        y: L.lara.y,
+        draw: () => {
+          drawLara2yo(ctx, laraX, L.lara.y, {
+            isDancing: true,
+            danceElapsed: s5.cutsceneElapsed,
+            scaleBoost: 1.14,
+          });
+        },
+      },
+    ];
+    danceDrawables.sort((a, b) => a.y - b.y);
+    for (const item of danceDrawables) {
+      item.draw();
+    }
+
+    drawMoodIcon(ctx, L.cris.x, L.cris.y - 60, 'smile');
 
     // Animated speech bubble for Cris laughing
-    const crisBx = px(rugCenterX - 32);
-    const crisBy = px(rugCenterY - 68 + Math.sin(t * 9) * 1.5);
+    const crisBx = px(L.cris.x - 6);
+    const crisBy = px(L.cris.y - 72 + Math.sin(t * 9) * 1.5);
     ctx.save();
     ctx.fillStyle = OUTLINE;
     ctx.fillRect(crisBx - 32, crisBy - 12, 64, 15);
@@ -1285,16 +1342,9 @@ export function renderStage5World(
     ctx.fillText('“Hahaha!”', crisBx, crisBy - 2);
     ctx.restore();
 
-    const swayX = Math.sin(s5.cutsceneElapsed * 4.2) * 8;
-    drawLara2yo(ctx, rugCenterX + 6 + swayX, rugCenterY + 6, {
-      isDancing: true,
-      danceElapsed: s5.cutsceneElapsed,
-      scaleBoost: 1.14,
-    });
-
     // Animated singing speech bubble above Lara ("Pepelequinha, pepelequinha!")
-    const bx = px(rugCenterX + 10 + swayX);
-    const by = px(rugCenterY - 48 + Math.sin(t * 7) * 2.5);
+    const bx = px(laraX);
+    const by = px(L.lara.y - 58 + Math.sin(t * 7) * 2.5);
     const lyricText =
       Math.floor(s5.cutsceneElapsed * 1.6) % 2 === 0
         ? '♪ “Pepelequinha,” ♪'
@@ -1409,6 +1459,86 @@ export function renderStage5World(
     type Drawable = { y: number; draw: () => void };
     const drawables: Drawable[] = [];
 
+    // Ajuste 2: montagem passo a passo do quarto da Lara usando somente imagens PNG transparentes
+    if (s5.mapId === 'bela_vista_lara_room' && s5.nurseryStage >= 1) {
+      const crib = STAGE5_LARA_ARRIVAL_LAYOUT.crib;
+      const cribFootY = Math.round(crib.y + 8.5);
+      const cribLeft = Math.round(crib.x - crib.width / 2);
+      const cribTop = cribFootY - crib.height;
+      const cribBody = getStage5LaraCribBody();
+      const cribFrontRail = getStage5LaraCribFrontRail();
+      const mobileImg = getStage5LaraMobile();
+      const layetteImg = getStage5LaraLayette();
+
+      drawables.push({
+        y: crib.y,
+        draw: () => {
+          if (cribBody && cribBody.complete && cribBody.naturalWidth > 0) {
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(cribBody, cribLeft, cribTop, crib.width, crib.height);
+            ctx.restore();
+          }
+        },
+      });
+
+      if (s5.nurseryStage >= 3) {
+        drawables.push({
+          y: crib.y + 0.1,
+          draw: () => {
+            if (layetteImg && layetteImg.complete && layetteImg.naturalWidth > 0) {
+              const layW = 58;
+              const layH = Math.round((layW * layetteImg.naturalHeight) / Math.max(1, layetteImg.naturalWidth));
+              ctx.save();
+              ctx.imageSmoothingEnabled = false;
+              ctx.drawImage(
+                layetteImg,
+                Math.round(crib.x - layW / 2 + 4),
+                Math.round(cribTop + 14),
+                layW,
+                layH,
+              );
+              ctx.restore();
+            }
+          },
+        });
+        drawables.push({
+          y: crib.y + 0.2,
+          draw: () => {
+            if (cribFrontRail && cribFrontRail.complete && cribFrontRail.naturalWidth > 0) {
+              ctx.save();
+              ctx.imageSmoothingEnabled = false;
+              ctx.drawImage(cribFrontRail, cribLeft, cribTop, crib.width, crib.height);
+              ctx.restore();
+            }
+          },
+        });
+      }
+
+      if (s5.nurseryStage >= 2) {
+        drawables.push({
+          y: crib.y + 0.25,
+          draw: () => {
+            if (mobileImg && mobileImg.complete && mobileImg.naturalWidth > 0) {
+              const mobW = 46;
+              const mobH = Math.round((mobW * mobileImg.naturalHeight) / Math.max(1, mobileImg.naturalWidth));
+              const sway = Math.sin(t * 2.2) * 1.5;
+              ctx.save();
+              ctx.imageSmoothingEnabled = false;
+              ctx.drawImage(
+                mobileImg,
+                Math.round(cribLeft + 10 + sway),
+                Math.round(cribTop - mobH + 22),
+                mobW,
+                mobH,
+              );
+              ctx.restore();
+            }
+          },
+        });
+      }
+    }
+
     for (const npc of sim.npcs) {
       if (!npc.visible) continue;
       drawables.push({
@@ -1474,6 +1604,8 @@ export function renderStage5World(
   if (stage5DebugOverlay) {
     if (s5.mapId === 'parquinho_igreja') {
       drawParquinhoDebugOverlay(ctx, sim);
+    } else if (s5.mapId === 'bela_vista_lara_room') {
+      drawQuartoLaraDebugOverlay(ctx, sim);
     }
     const faceBoxes = collectStage5VisibleFaceBoxes(sim);
     if (faceBoxes.length > 0) {
@@ -1510,6 +1642,11 @@ function collectStage5VisibleFaceBoxes(sim: SimulationState): Stage5FaceBounds[]
     const easedWalk = 1 - Math.pow(1 - walkProgress, 2);
     const crisX = L.crisStartX + (L.cris.x - L.crisStartX) * easedWalk;
     return getStage5LaraArrivalFaceBoxes(crisX);
+  }
+
+  if (s5.cutscene === 'lara_pepelequinha_dance') {
+    const swayX = Math.sin(s5.cutsceneElapsed * 4.2) * 8;
+    return getStage5PepelequinhaDanceFaceBoxes(swayX);
   }
 
   if (s5.cutscene === 'none') {
@@ -1630,6 +1767,44 @@ function drawParquinhoDebugOverlay(ctx: CanvasRenderingContext2D, sim: Simulatio
   ctx.fillRect(4, 4, 150, 10);
   ctx.fillStyle = '#ffffff';
   ctx.fillText(`F3 debug · Grazi (${Math.round(p.x)}, ${Math.round(p.y)})`, 7, 11);
+  ctx.restore();
+}
+
+function drawQuartoLaraDebugOverlay(ctx: CanvasRenderingContext2D, sim: SimulationState): void {
+  ctx.save();
+  ctx.lineWidth = 1;
+  ctx.font = '6px monospace';
+  ctx.textAlign = 'left';
+  const drawZone = (z: Stage5Zone, fill: string, stroke: string) => {
+    ctx.fillStyle = fill;
+    ctx.fillRect(z.x1, z.y1, z.x2 - z.x1, z.y2 - z.y1);
+    ctx.strokeStyle = stroke;
+    ctx.strokeRect(z.x1 + 0.5, z.y1 + 0.5, z.x2 - z.x1 - 1, z.y2 - z.y1 - 1);
+  };
+  for (const z of STAGE5_QUARTO_LARA_WALK_ZONES) {
+    drawZone(z, 'rgba(60, 220, 90, 0.22)', 'rgba(60, 220, 90, 0.9)');
+  }
+  for (const z of STAGE5_QUARTO_LARA_BLOCKED_ZONES) {
+    drawZone(z, 'rgba(235, 50, 50, 0.28)', 'rgba(255, 80, 80, 0.95)');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(z.id, z.x1 + 2, z.y1 + 7);
+  }
+  for (const h of STAGE5_QUARTO_LARA_HOTSPOTS) {
+    ctx.setLineDash([3, 2]);
+    ctx.strokeStyle = '#ffe14d';
+    ctx.strokeRect(h.x1 + 0.5, h.y1 + 0.5, h.x2 - h.x1 - 1, h.y2 - h.y1 - 1);
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ffe14d';
+    ctx.fillRect(h.standX - 2, h.standY - 2, 4, 4);
+    ctx.fillText(h.label, h.standX + 4, h.standY + 10);
+  }
+  const p = sim.player;
+  ctx.strokeStyle = '#ffffff';
+  ctx.strokeRect(p.x - p.width / 2, p.y - p.height / 2, p.width, p.height);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.72)';
+  ctx.fillRect(4, 4, 178, 10);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(`F3 Quarto da Lara · Grazi (${Math.round(p.x)}, ${Math.round(p.y)})`, 7, 11);
   ctx.restore();
 }
 

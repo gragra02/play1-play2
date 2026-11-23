@@ -52,15 +52,20 @@ import npcGirlUrl from '../assets/images/npc_girl_skin_1795049131974.jpg';
 import npcVendorUrl from '../assets/images/npc_vendor_sprite_1795121208248.jpg';
 import s4ArielAdultUrl from '../assets/images/s4_ariel_adult_sprite_1795202479243.jpg';
 import s4ArielAdultWalkSheetUrl from '../assets/images/s4_ariel_adult_walk_sheet.png';
+import s4BarManDrunkWalkSheetUrl from '../assets/images/s4_bar_man_drunk_walk_sheet.png';
 import s4Cristian5yoUrl from '../assets/images/s4_cristian_5yo_sprite_1795202486514.jpg';
 import s4Cristian7yoUrl from '../assets/images/s4_cristian_7yo_sprite_1795202453105.jpg';
+import s4CristianBabyWalkSheetUrl from '../assets/images/s4_cristian_baby_sleeping_walk_sheet.png';
 import s4CristianToddlerUrl from '../assets/images/s4_cristian_toddler_sprite_1795202457641.jpg';
 import s4BicycleCoupleWalkSheetUrl from '../assets/images/s4_bicycle_couple_walk_sheet.png';
 import s4GraziAdultUrl from '../assets/images/s4_grazi_adult_sprite_1795202450326.jpg';
 import s4GraziAdultWalkSheetUrl from '../assets/images/s4_grazi_adult_walk_sheet.png';
+import s4GraziArielPregnantHandholdWalkSheetUrl from '../assets/images/s4_grazi_ariel_pregnant_handhold_walk_sheet.png';
 import s4GraziPregnantWalkSheetUrl from '../assets/images/s4_grazi_pregnant_walk_sheet_from_reference.png';
 import s4NaniUrl from '../assets/images/s4_nani_sprite_1795209660137.jpg';
 import s4PregnancyEmbraceUrl from '../assets/images/s4_pregnancy_reveal_embrace.jpg';
+import arielLigacaoSheetUrl from '../assets/images/ariel_ligacao_sheet.png';
+import graziLigacaoSheetUrl from '../assets/images/grazi_ligacao_sheet.png';
 import s5Cristian7yoPerfilUrl from '../assets/images/s5_cristian_7yo_perfil_1795404680160.jpg';
 import s5CristianKarateWalkSheetUrl from '../assets/images/s5_cristian_karate_walk_sheet.png';
 import s5CristianKarateKataSheetUrl from '../assets/images/s5_cristian_karate_kata_sheet.png';
@@ -144,11 +149,11 @@ const WALK_SHEET_URLS = {
   arielEloisa: arielEloisaWalkSheetUrl,
   arielLauraCouple: arielLauraWalkSheetUrl,
   graziAriel: graziArielWalkSheetUrl,
-  barMan: null as string | null,
-  s4PregnantCouple: null as string | null,
+  barMan: s4BarManDrunkWalkSheetUrl,
+  s4PregnantCouple: s4GraziArielPregnantHandholdWalkSheetUrl,
   s4ArielAdultWalk: s4ArielAdultWalkSheetUrl,
   s4GraziAdultWalk: s4GraziAdultWalkSheetUrl,
-  s4CristianBaby: null as string | null,
+  s4CristianBaby: s4CristianBabyWalkSheetUrl,
   s4BicycleCouple: s4BicycleCoupleWalkSheetUrl,
   lauraLeoCouple: lauraLeoWalkTogetherUrl,
   leo: leoWalkSheetUrl,
@@ -158,6 +163,8 @@ const WALK_SHEET_URLS = {
   s5Lara2yoWalk: s5Lara2yoWalkSheetUrl,
   s5Lara2yoDance: s5Lara2yoDanceSheetUrl,
   s5Lucas5yoWalk: s5Lucas5yoWalkSheetUrl,
+  s5GraziPhone: graziLigacaoSheetUrl,
+  s5ArielPhone: arielLigacaoSheetUrl,
 } as const;
 type WalkSheetCharacter = keyof typeof WALK_SHEET_URLS;
 const walkSheetImages = new Map<WalkSheetCharacter, HTMLImageElement>();
@@ -232,6 +239,8 @@ export function preloadAllCharacterSkins(): void {
   getCharacterWalkSheetImage('s5Lara2yoWalk');
   getCharacterWalkSheetImage('s5Lara2yoDance');
   getCharacterWalkSheetImage('s5Lucas5yoWalk');
+  getCharacterWalkSheetImage('s5GraziPhone');
+  getCharacterWalkSheetImage('s5ArielPhone');
   getS4GraziPregnantWalkSheetImage();
   // Prioritize active-stage skins lazily via getSkinSprite() on first render;
   // gently trickle-preload remaining skins in background without blocking the main thread.

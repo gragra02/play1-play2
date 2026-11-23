@@ -12,13 +12,19 @@ import {
   STAGE5_APARTMENT_EXIT_POS,
   STAGE5_GUESSER_DOOR_POS,
   STAGE5_LARA_ARRIVAL_LAYOUT,
+  STAGE5_NURSERY_BUILD_POS,
+  STAGE5_NURSERY_EXIT_POS,
+  STAGE5_QUARTO_LARA_HOTSPOTS,
   STAGE_5_DIALOGUES,
   STAGE_5_ETAPA1_MEMORY_IDS,
   STAGE_5_KATA_MOVES,
   STAGE_5_MEMORIES,
   STAGE_5_PHONE_CALL_STEPS,
   findStage5FaceOverlaps,
+  getStage5CharacterFaceBounds,
   getStage5LaraArrivalFaceBoxes,
+  getStage5PepelequinhaDanceFaceBoxes,
+  isStage5QuartoLaraBoxWalkable,
 } from './stage5Data';
 import {
   advanceStage5PregnancyCallCutscene,
@@ -27,6 +33,7 @@ import {
   getStage5CutsceneCaption,
   getStage5PhoneCallSnapshot,
   restartStage5KarateMinigame,
+  startStage5ApartmentLara2yoExplore,
   startStage5KarateMinigame,
   startStage5LaraBabyArrival,
   startStage5ParkReunionExplore,
@@ -479,6 +486,59 @@ test('Stage 5 Ajuste 3: Cris sees baby Lara in the crib with no face overlap, sl
   const lines = sim.activeDialogue!.lines;
   assert.ok(lines.some((l) => l.speaker === 'cristian' && l.emotion === 'romantic'));
   assert.ok(lines.some((l) => l.speaker === 'lara_baby'));
+});
+
+test('Stage 5 Ajuste 2: Lara nursery map has dedicated walkable zones, blocked dresser/walls, and hotspots', () => {
+  // Center nursery assembly spot and door exit spot are walkable
+  assert.equal(
+    isStage5QuartoLaraBoxWalkable(
+      STAGE5_NURSERY_BUILD_POS.x - 9,
+      STAGE5_NURSERY_BUILD_POS.y - 7,
+      STAGE5_NURSERY_BUILD_POS.x + 9,
+      STAGE5_NURSERY_BUILD_POS.y + 7,
+    ),
+    true,
+  );
+  assert.equal(
+    isStage5QuartoLaraBoxWalkable(
+      STAGE5_NURSERY_EXIT_POS.x - 9,
+      STAGE5_NURSERY_EXIT_POS.y - 7,
+      STAGE5_NURSERY_EXIT_POS.x + 9,
+      STAGE5_NURSERY_EXIT_POS.y + 7,
+    ),
+    true,
+  );
+  // Dresser and back wall are blocked
+  assert.equal(isStage5QuartoLaraBoxWalkable(540, 280, 560, 300), false);
+  assert.equal(isStage5QuartoLaraBoxWalkable(300, 120, 320, 140), false);
+  assert.ok(STAGE5_QUARTO_LARA_HOTSPOTS.some((h) => h.id === 'hs_berco_espaco'));
+  assert.ok(STAGE5_QUARTO_LARA_HOTSPOTS.some((h) => h.id === 'hs_porta_quarto'));
+});
+
+test('Stage 5 Pepelequinha dance: Grazi never stands in front of Lara and zero characters overlap', () => {
+  const sim = startStage5ApartmentLara2yoExplore(createStage5Simulation(true, []), false);
+  const laraNpc = sim.npcs.find((n) => n.role === 'lara')!;
+  // At exploration spawn, Grazi stands to the side rather than in front of Lara
+  assert.ok(Math.abs(sim.player.x - laraNpc.x) > 80);
+
+  const spawnBoxes = [
+    getStage5CharacterFaceBounds('grazi', 'Grazi', sim.player.x, sim.player.y, Math.round(48 * 1.6)),
+    ...sim.npcs.map((n) =>
+      getStage5CharacterFaceBounds(
+        n.id,
+        n.name,
+        n.x,
+        n.y,
+        Math.round((n.role === 'ariel' ? 49 : n.role === 'cristian' ? 40 : 30) * 1.6),
+      ),
+    ),
+  ];
+  assert.equal(findStage5FaceOverlaps(spawnBoxes).length, 0);
+
+  // During the Pepelequinha dance cutscene, no faces overlap at either sway extreme
+  assert.equal(findStage5FaceOverlaps(getStage5PepelequinhaDanceFaceBoxes(-8)).length, 0);
+  assert.equal(findStage5FaceOverlaps(getStage5PepelequinhaDanceFaceBoxes(0)).length, 0);
+  assert.equal(findStage5FaceOverlaps(getStage5PepelequinhaDanceFaceBoxes(8)).length, 0);
 });
 
 

@@ -23,10 +23,14 @@ import s5BelaVistaGuesserUrl from '../assets/images/s5_bela_vista_guesser.jpg';
 import s5BelaVistaParkChurchUrl from '../assets/images/s5_bela_vista_park_church.jpg';
 import s5BercoLaraCorpoUrl from '../assets/images/s5_berco_lara_corpo.png';
 import s5BercoLaraGradeFrontalUrl from '../assets/images/s5_berco_lara_grade_frontal.png';
+import s5EnxovalLaraUrl from '../assets/images/s5_enxoval_lara.png';
 import s5KarateChampionshipGymUrl from '../assets/images/s5_karate_championship_gym.jpg';
+import s5MobileLaraUrl from '../assets/images/s5_mobile_lara.png';
 const fotoParquinhoPixelUrl = '/assets/aistudio/lara_lucas_cris_b24c87e9.jfif';
 import s5ParquinhoIgrejaUrl from '../assets/images/s5_parquinho_igreja.jpg';
 import s5PonteImaruimCondoUrl from '../assets/images/s5_ponte_imaruim_condo.jpg';
+import s5QuartoLaraUrl from '../assets/images/s5_quarto_lara.jpg';
+import s5TrabalhoArielKoerichUrl from '../assets/images/s5_trabalho_ariel_koerich.jpg';
 import salaEstarNoiteFilmeUrl from '../assets/images/sala_estar_noite_filme_1795121344494.jpg';
 import type { Stage3MapId, Stage4MapId, Stage5MapId } from './types';
 
@@ -50,7 +54,7 @@ const STAGE4_BACKDROP_URLS: Record<Stage4MapId, string> = {
 const STAGE5_BACKDROP_URLS: Record<Stage5MapId, string> = {
   bela_vista_guesser: s5BelaVistaGuesserUrl,
   bela_vista_apartment: s5ApartamentoSalaBelaVistaUrl,
-  bela_vista_lara_room: s5ApartamentoSalaBelaVistaUrl,
+  bela_vista_lara_room: s5QuartoLaraUrl,
   karate_tournament_gym: s5KarateChampionshipGymUrl,
   bela_vista_park_church: s5BelaVistaParkChurchUrl,
   // Etapa 7 (parquinho em frente à igreja): fundo pronto 1264x848, sem desenho por código.
@@ -75,13 +79,17 @@ const ALL_ENVIRONMENT_URLS: string[] = [
   s4MeiaAguaInteriorUrl,
   s5BelaVistaGuesserUrl,
   s5ApartamentoSalaBelaVistaUrl,
+  s5QuartoLaraUrl,
   s5BercoLaraCorpoUrl,
   s5BercoLaraGradeFrontalUrl,
+  s5MobileLaraUrl,
+  s5EnxovalLaraUrl,
   s5KarateChampionshipGymUrl,
   s5BelaVistaParkChurchUrl,
   s5ParquinhoIgrejaUrl,
   fotoParquinhoPixelUrl,
   s5PonteImaruimCondoUrl,
+  s5TrabalhoArielKoerichUrl,
 ];
 
 const loadedImages = new Map<string, HTMLImageElement>();
@@ -142,6 +150,18 @@ export function getStage5LaraCribBody(): HTMLImageElement | null {
 
 export function getStage5LaraCribFrontRail(): HTMLImageElement | null {
   return getOrLoadImage(s5BercoLaraGradeFrontalUrl);
+}
+
+export function getStage5LaraMobile(): HTMLImageElement | null {
+  return getOrLoadImage(s5MobileLaraUrl);
+}
+
+export function getStage5LaraLayette(): HTMLImageElement | null {
+  return getOrLoadImage(s5EnxovalLaraUrl);
+}
+
+export function getStage5ArielWorkBackdrop(): HTMLImageElement | null {
+  return getOrLoadImage(s5TrabalhoArielKoerichUrl);
 }
 
 export function getCaminhoNovoTravelBackdrop(): HTMLImageElement | null {

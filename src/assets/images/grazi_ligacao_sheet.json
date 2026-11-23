@@ -1,0 +1,14 @@
+{
+  "image": "grazi_ligacao_sheet.png",
+  "columns": 3,
+  "rows": 1,
+  "frames": [
+    "pegando_celular",
+    "falando_emocionada",
+    "sorrindo_enxugando_olho"
+  ],
+  "cell": {
+    "width": 211,
+    "height": 547
+  }
+}

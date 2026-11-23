@@ -1,0 +1,14 @@
+{
+  "image": "ariel_ligacao_sheet.png",
+  "columns": 3,
+  "rows": 1,
+  "frames": [
+    "atendendo_atento",
+    "surpreso_emocionado",
+    "sorrindo_emocionado"
+  ],
+  "cell": {
+    "width": 232,
+    "height": 539
+  }
+}

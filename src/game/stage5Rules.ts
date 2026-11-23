@@ -20,6 +20,7 @@ import {
   createStage5Npcs,
   getStage5ParquinhoHotspot,
   isStage5ParquinhoBoxWalkable,
+  isStage5QuartoLaraBoxWalkable,
   isStage5TileSolid,
 } from './stage5Data';
 import type {
@@ -784,9 +785,9 @@ export function enterStage5LaraBedroom(state: SimulationState): SimulationState 
     },
     player: {
       ...state.player,
-      x: 11.8 * TILE_SIZE,
-      y: 12.0 * TILE_SIZE,
-      dir: 'up',
+      x: 5.8 * TILE_SIZE,
+      y: 10.8 * TILE_SIZE,
+      dir: 'right',
       isMoving: false,
     },
   };
@@ -868,9 +869,9 @@ export function startStage5ApartmentLara2yoExplore(
     npcs: createStage5Npcs('apartment_lara_2yo'),
     player: {
       ...state.player,
-      x: 11.8 * TILE_SIZE,
-      y: 12.1 * TILE_SIZE,
-      dir: 'up',
+      x: 8.2 * TILE_SIZE,
+      y: 11.6 * TILE_SIZE,
+      dir: 'right',
       isMoving: false,
     },
     activeDialogue: withIntroDialogue ? STAGE_5_DIALOGUES.s5_lara_2yo_intro : null,
@@ -1035,6 +1036,16 @@ function canStandAtStage5(
   // Etapa 7: área de andar definida por zonas retangulares medidas sobre o fundo pronto.
   if (mapId === 'parquinho_igreja') {
     if (!isStage5ParquinhoBoxWalkable(left, top, right, bottom)) return false;
+    for (const npc of npcs) {
+      if (!npc.visible) continue;
+      if (Math.abs(x - npc.x) < 16 && Math.abs(y - npc.y) < 12) return false;
+    }
+    return true;
+  }
+
+  // Ajuste 2: quarto da Lara com zonas caminháveis/bloqueadas medidas sobre s5_quarto_lara.jpg
+  if (mapId === 'bela_vista_lara_room') {
+    if (!isStage5QuartoLaraBoxWalkable(left, top, right, bottom)) return false;
     for (const npc of npcs) {
       if (!npc.visible) continue;
       if (Math.abs(x - npc.x) < 16 && Math.abs(y - npc.y) < 12) return false;
