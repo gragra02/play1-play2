@@ -62,6 +62,7 @@ import s4GraziAdultUrl from '../assets/images/s4_grazi_adult_sprite_179520245032
 import s4GraziAdultWalkSheetUrl from '../assets/images/s4_grazi_adult_walk_sheet.png';
 import s4GraziArielPregnantHandholdWalkSheetUrl from '../assets/images/s4_grazi_ariel_pregnant_handhold_walk_sheet.png';
 import s4GraziPregnantWalkSheetUrl from '../assets/images/s4_grazi_pregnant_walk_sheet_from_reference.png';
+import s4MotherInLawUrl from '../assets/images/s4_mother_in_law_sprite.png';
 import s4NaniUrl from '../assets/images/s4_nani_sprite_1795209660137.jpg';
 import s4PregnancyEmbraceUrl from '../assets/images/s4_pregnancy_reveal_embrace.jpg';
 import arielLigacaoSheetUrl from '../assets/images/ariel_ligacao_sheet.png';
@@ -79,7 +80,7 @@ import {
   loadTransparentSprite,
 } from './spriteSheet';
 
-export const STAGE4_MOTHER_IN_LAW_SKIN_URL: string = '';
+export const STAGE4_MOTHER_IN_LAW_SKIN_URL: string = s4MotherInLawUrl;
 
 export const SKIN_URLS = {
   graziFront: graziFrontUrl,
