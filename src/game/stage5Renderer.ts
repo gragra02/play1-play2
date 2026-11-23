@@ -4,7 +4,7 @@ import {
   getS4GraziPregnantWalkSheetImage,
   getSkinSprite,
 } from './characterSkins';
-import { getStage5MapBackdrop } from './environmentArt';
+import { getStage5MapBackdrop, getStage5ParkPolaroidPhoto } from './environmentArt';
 import { MAP_COLS, MAP_ROWS, TILE_SIZE } from './mapData';
 import {
   GLOBAL_CHAR_SCALE,
@@ -1262,16 +1262,6 @@ export function renderStage5World(
     });
     drawMoodIcon(ctx, centerX - 32, baseY - 68, 'heart');
     drawMoodIcon(ctx, centerX + 26, baseY - 58, 'smile');
-
-    // Soft camera flash effect around t = 1.6..2.8s
-    if (s5.cutsceneElapsed >= 1.4 && s5.cutsceneElapsed <= 2.9) {
-      const flashDist = Math.abs(s5.cutsceneElapsed - 1.85);
-      const flashAlpha = Math.max(0, Math.min(0.78, 0.78 * (1 - flashDist / 0.85)));
-      if (flashAlpha > 0.01) {
-        ctx.fillStyle = `rgba(255, 252, 240, ${flashAlpha.toFixed(2)})`;
-        ctx.fillRect(0, 0, worldW, worldH);
-      }
-    }
   } else if (s5.cutscene === 'ponte_imaruim_ending') {
     // Etapa 8 Final:
     // Part A (0..3.2s): Slow camera farewell of Bela Vista (Mercado Guesser)
@@ -1416,6 +1406,10 @@ export function renderStage5World(
 
   particles.draw(ctx);
   ctx.restore();
+
+  if (s5.cutscene === 'park_family_reunion') {
+    drawParkFamilyPolaroidOverlay(ctx, s5.cutsceneElapsed, viewW, viewH);
+  }
 }
 
 // ============================================================================
@@ -1472,3 +1466,114 @@ function drawParquinhoDebugOverlay(ctx: CanvasRenderingContext2D, sim: Simulatio
   ctx.fillText(`F3 debug · Grazi (${Math.round(p.x)}, ${Math.round(p.y)})`, 7, 11);
   ctx.restore();
 }
+
+function drawParkFamilyPolaroidOverlay(
+  ctx: CanvasRenderingContext2D,
+  cutsceneElapsed: number,
+  viewW: number,
+  viewH: number,
+): void {
+  if (cutsceneElapsed < 1.4) return;
+
+  const flashPeakT = 1.85;
+  ctx.save();
+
+  if (cutsceneElapsed < flashPeakT) {
+    const rise = Math.max(0, Math.min(1, (cutsceneElapsed - 1.4) / (flashPeakT - 1.4)));
+    ctx.fillStyle = `rgba(255, 252, 244, ${(0.88 * rise).toFixed(3)})`;
+    ctx.fillRect(0, 0, viewW, viewH);
+    ctx.restore();
+    return;
+  }
+
+  const sincePeak = cutsceneElapsed - flashPeakT;
+  const dimAlpha = 0.56 * Math.min(1, sincePeak / 0.45);
+  ctx.fillStyle = `rgba(20, 12, 8, ${dimAlpha.toFixed(3)})`;
+  ctx.fillRect(0, 0, viewW, viewH);
+
+  // Polaroid entrance: fade in from white + zoom 90% -> 100% over ~1s
+  const polaroidAlpha = Math.min(1, sincePeak / 0.55);
+  const zoomP = Math.min(1, sincePeak / 1.0);
+  const zoomEased = 1 - Math.pow(1 - zoomP, 3);
+  const scale = 0.9 + 0.1 * zoomEased;
+
+  const availableH = Math.max(150, viewH - 220);
+  const maxPhotoH = availableH * 0.72;
+  const maxPhotoW = viewW * 0.58;
+  const photoW = Math.max(160, Math.min(maxPhotoW, (maxPhotoH * 4) / 3, 440));
+  const photoH = photoW * 0.75; // 4:3
+  const borderSide = Math.max(10, Math.round(photoW * 0.055));
+  const borderTop = borderSide;
+  const borderBottom = Math.max(38, Math.round(photoW * 0.19));
+  const cardW = photoW + borderSide * 2;
+  const cardH = photoH + borderTop + borderBottom;
+
+  const cx = viewW / 2;
+  const cy = Math.max(66 + cardH / 2 + 6, (viewH - 138) / 2);
+  const tiltRad = (-1.6 * Math.PI) / 180;
+
+  ctx.save();
+  ctx.globalAlpha = polaroidAlpha;
+  ctx.translate(cx, cy);
+  ctx.rotate(tiltRad);
+  ctx.scale(scale, scale);
+
+  // Soft drop shadow + Polaroid white card with larger bottom margin
+  ctx.shadowColor = 'rgba(14, 8, 4, 0.48)';
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetX = 4;
+  ctx.shadowOffsetY = 10;
+  ctx.fillStyle = '#fcfaf2';
+  ctx.beginPath();
+  ctx.roundRect(-cardW / 2, -cardH / 2, cardW, cardH, 4);
+  ctx.fill();
+
+  // Clear shadow for crisp card outline, photo, and caption
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+
+  ctx.strokeStyle = '#dfd8c7';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  const photoX = -photoW / 2;
+  const photoY = -cardH / 2 + borderTop;
+  const photoImg = getStage5ParkPolaroidPhoto();
+  if (photoImg && photoImg.complete && photoImg.naturalWidth > 0) {
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(photoImg, photoX, photoY, photoW, photoH);
+  } else {
+    ctx.fillStyle = '#dce8f5';
+    ctx.fillRect(photoX, photoY, photoW, photoH);
+  }
+
+  ctx.strokeStyle = 'rgba(58, 36, 20, 0.22)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(photoX + 0.5, photoY + 0.5, photoW - 1, photoH - 1);
+
+  const fontSize = Math.max(13, Math.round(photoW * 0.056));
+  ctx.fillStyle = '#3b2316';
+  ctx.font = `700 italic ${fontSize}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(
+    'Família mais linda',
+    0,
+    photoY + photoH + borderBottom * 0.52,
+  );
+  ctx.restore();
+
+  // Fade suave do branco do flash para a Polaroid
+  if (sincePeak < 0.9) {
+    const whiteAlpha = 0.88 * (1 - Math.min(1, sincePeak / 0.85));
+    if (whiteAlpha > 0.005) {
+      ctx.fillStyle = `rgba(255, 252, 244, ${whiteAlpha.toFixed(3)})`;
+      ctx.fillRect(0, 0, viewW, viewH);
+    }
+  }
+
+  ctx.restore();
+}
+

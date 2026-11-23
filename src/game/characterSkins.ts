@@ -54,15 +54,11 @@ import s4ArielAdultUrl from '../assets/images/s4_ariel_adult_sprite_179520247924
 import s4ArielAdultWalkSheetUrl from '../assets/images/s4_ariel_adult_walk_sheet.png';
 import s4Cristian5yoUrl from '../assets/images/s4_cristian_5yo_sprite_1795202486514.jpg';
 import s4Cristian7yoUrl from '../assets/images/s4_cristian_7yo_sprite_1795202453105.jpg';
-import s4CristianBabyWalkSheetUrl from '../assets/images/s4_cristian_baby_sleeping_walk_sheet.png';
 import s4CristianToddlerUrl from '../assets/images/s4_cristian_toddler_sprite_1795202457641.jpg';
 import s4BicycleCoupleWalkSheetUrl from '../assets/images/s4_bicycle_couple_walk_sheet.png';
 import s4GraziAdultUrl from '../assets/images/s4_grazi_adult_sprite_1795202450326.jpg';
 import s4GraziAdultWalkSheetUrl from '../assets/images/s4_grazi_adult_walk_sheet.png';
-import s4BarManDrunkWalkSheetUrl from '../assets/images/s4_bar_man_drunk_walk_sheet.png';
-import s4GraziArielPregnantHandholdWalkSheetUrl from '../assets/images/s4_grazi_ariel_pregnant_handhold_walk_sheet.png';
 import s4GraziPregnantWalkSheetUrl from '../assets/images/s4_grazi_pregnant_walk_sheet_from_reference.png';
-import s4MotherInLawUrl from '../assets/images/s4_mother_in_law_sprite.png';
 import s4NaniUrl from '../assets/images/s4_nani_sprite_1795209660137.jpg';
 import s4PregnancyEmbraceUrl from '../assets/images/s4_pregnancy_reveal_embrace.jpg';
 import s5CristianKarateWalkSheetUrl from '../assets/images/s5_cristian_karate_walk_sheet.png';
@@ -77,7 +73,7 @@ import {
   loadTransparentSprite,
 } from './spriteSheet';
 
-export const STAGE4_MOTHER_IN_LAW_SKIN_URL: string = s4MotherInLawUrl;
+export const STAGE4_MOTHER_IN_LAW_SKIN_URL: string = '';
 
 export const SKIN_URLS = {
   graziFront: graziFrontUrl,
@@ -130,7 +126,6 @@ export const SKIN_URLS = {
   s4GraziAdult: s4GraziAdultUrl,
   s4PregnancyEmbrace: s4PregnancyEmbraceUrl,
   s4Nani: s4NaniUrl,
-  s4MotherInLaw: s4MotherInLawUrl,
   s4CristianToddler: s4CristianToddlerUrl,
   s4Cristian5yo: s4Cristian5yoUrl,
   s4Cristian7yo: s4Cristian7yoUrl,
@@ -147,11 +142,11 @@ const WALK_SHEET_URLS = {
   arielEloisa: arielEloisaWalkSheetUrl,
   arielLauraCouple: arielLauraWalkSheetUrl,
   graziAriel: graziArielWalkSheetUrl,
-  barMan: s4BarManDrunkWalkSheetUrl,
-  s4PregnantCouple: s4GraziArielPregnantHandholdWalkSheetUrl,
+  barMan: null as string | null,
+  s4PregnantCouple: null as string | null,
   s4ArielAdultWalk: s4ArielAdultWalkSheetUrl,
   s4GraziAdultWalk: s4GraziAdultWalkSheetUrl,
-  s4CristianBaby: s4CristianBabyWalkSheetUrl,
+  s4CristianBaby: null as string | null,
   s4BicycleCouple: s4BicycleCoupleWalkSheetUrl,
   lauraLeoCouple: lauraLeoWalkTogetherUrl,
   leo: leoWalkSheetUrl,
@@ -170,10 +165,12 @@ export function getCharacterWalkSheetImage(
   character: WalkSheetCharacter,
 ): HTMLImageElement | null {
   if (typeof window === 'undefined') return null;
+  const src = WALK_SHEET_URLS[character];
+  if (!src) return null;
   let image = walkSheetImages.get(character);
   if (!image) {
     image = new Image();
-    image.src = WALK_SHEET_URLS[character];
+    image.src = src;
     walkSheetImages.set(character, image);
   }
   return image.complete && image.naturalWidth > 0 ? image : null;

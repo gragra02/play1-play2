@@ -22,6 +22,7 @@ import s5ApartamentoSalaBelaVistaUrl from '../assets/images/apartamento_sala_bel
 import s5BelaVistaGuesserUrl from '../assets/images/s5_bela_vista_guesser.jpg';
 import s5BelaVistaParkChurchUrl from '../assets/images/s5_bela_vista_park_church.jpg';
 import s5KarateChampionshipGymUrl from '../assets/images/s5_karate_championship_gym.jpg';
+const fotoParquinhoPixelUrl = '/assets/aistudio/lara_lucas_cris_b24c87e9.jfif';
 import s5ParquinhoIgrejaUrl from '../assets/images/s5_parquinho_igreja.jpg';
 import s5PonteImaruimCondoUrl from '../assets/images/s5_ponte_imaruim_condo.jpg';
 import salaEstarNoiteFilmeUrl from '../assets/images/sala_estar_noite_filme_1795121344494.jpg';
@@ -75,6 +76,7 @@ const ALL_ENVIRONMENT_URLS: string[] = [
   s5KarateChampionshipGymUrl,
   s5BelaVistaParkChurchUrl,
   s5ParquinhoIgrejaUrl,
+  fotoParquinhoPixelUrl,
   s5PonteImaruimCondoUrl,
 ];
 
@@ -124,6 +126,10 @@ export function getStage4MapBackdrop(mapId: Stage4MapId): HTMLImageElement | nul
 
 export function getStage5MapBackdrop(mapId: Stage5MapId): HTMLImageElement | null {
   return getOrLoadImage(STAGE5_BACKDROP_URLS[mapId]);
+}
+
+export function getStage5ParkPolaroidPhoto(): HTMLImageElement | null {
+  return getOrLoadImage(fotoParquinhoPixelUrl);
 }
 
 export function getCaminhoNovoTravelBackdrop(): HTMLImageElement | null {

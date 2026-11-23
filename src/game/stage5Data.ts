@@ -349,7 +349,7 @@ export const STAGE5_PARQUINHO_BLOCKED_ZONES: Stage5Zone[] = [
   { id: 'arvores_esquerda', label: 'Árvores da borda esquerda', x1: 0, y1: 40, x2: 60, y2: 512 },
   { id: 'arvores_direita', label: 'Árvores da borda direita', x1: 705, y1: 60, x2: 768, y2: 512 },
   { id: 'arbusto_inf_esq', label: 'Arbusto inferior esquerdo', x1: 60, y1: 476, x2: 130, y2: 512 },
-  { id: 'arbusto_inf_centro', label: 'Arbusto inferior central', x1: 150, y1: 452, x2: 232, y2: 512 },
+  { id: 'arbusto_inf_centro', label: 'Arbusto inferior central', x1: 156, y1: 460, x2: 226, y2: 512 },
   { id: 'arbusto_inf_dir', label: 'Arbusto inferior direito', x1: 543, y1: 430, x2: 672, y2: 512 },
   // Postes, bancos, lixeiras e bebedouro (bordas)
   { id: 'poste_esq', label: 'Poste esquerdo', x1: 56, y1: 200, x2: 80, y2: 258 },
@@ -361,17 +361,17 @@ export const STAGE5_PARQUINHO_BLOCKED_ZONES: Stage5Zone[] = [
   { id: 'lixeira_sup', label: 'Lixeira (calçada)', x1: 607, y1: 222, x2: 630, y2: 250 },
   { id: 'lixeira_inf', label: 'Lixeira inferior', x1: 73, y1: 432, x2: 96, y2: 466 },
   { id: 'bebedouro', label: 'Bebedouro', x1: 669, y1: 418, x2: 706, y2: 468 },
-  // Mureta do parquinho (abertura à direita y 328–356 e embaixo x 158–218)
-  { id: 'mureta_topo', label: 'Mureta (topo)', x1: 42, y1: 252, x2: 340, y2: 267 },
-  { id: 'mureta_esq', label: 'Mureta (esquerda)', x1: 40, y1: 252, x2: 74, y2: 440 },
-  { id: 'mureta_dir_sup', label: 'Mureta (direita, cima)', x1: 324, y1: 252, x2: 340, y2: 328 },
-  { id: 'mureta_dir_inf', label: 'Mureta (direita, baixo)', x1: 318, y1: 356, x2: 334, y2: 440 },
-  { id: 'mureta_inf_esq', label: 'Mureta (baixo, esquerda)', x1: 40, y1: 416, x2: 158, y2: 440 },
-  { id: 'mureta_inf_dir', label: 'Mureta (baixo, direita)', x1: 218, y1: 416, x2: 334, y2: 440 },
+  // Mureta do parquinho (abertura à direita y 324–366 e embaixo x 158–218)
+  { id: 'mureta_topo', label: 'Mureta (topo)', x1: 42, y1: 252, x2: 338, y2: 267 },
+  { id: 'mureta_esq', label: 'Mureta (esquerda)', x1: 40, y1: 252, x2: 70, y2: 436 },
+  { id: 'mureta_dir_sup', label: 'Mureta (direita, cima)', x1: 320, y1: 252, x2: 338, y2: 324 },
+  { id: 'mureta_dir_inf', label: 'Mureta (direita, baixo)', x1: 320, y1: 366, x2: 338, y2: 436 },
+  { id: 'mureta_inf_esq', label: 'Mureta (baixo, esquerda)', x1: 40, y1: 416, x2: 158, y2: 436 },
+  { id: 'mureta_inf_dir', label: 'Mureta (baixo, direita)', x1: 218, y1: 416, x2: 338, y2: 436 },
   // Brinquedos (bloqueados até a mureta de trás: ninguém fica atrás da estrutura alta)
-  { id: 'balanco', label: 'Estrutura do balanço', x1: 88, y1: 262, x2: 193, y2: 348 },
-  { id: 'escorregador', label: 'Escorregador', x1: 206, y1: 262, x2: 300, y2: 348 },
-  { id: 'gangorra', label: 'Gangorra', x1: 214, y1: 358, x2: 302, y2: 402 },
+  { id: 'balanco', label: 'Estrutura do balanço', x1: 88, y1: 266, x2: 190, y2: 340 },
+  { id: 'escorregador', label: 'Escorregador', x1: 212, y1: 266, x2: 296, y2: 338 },
+  { id: 'gangorra', label: 'Gangorra', x1: 218, y1: 364, x2: 294, y2: 396 },
   // Pista de skate
   { id: 'rampa_esq', label: 'Rampa esquerda', x1: 478, y1: 232, x2: 552, y2: 328 },
   { id: 'rampa_dir', label: 'Rampa direita', x1: 619, y1: 240, x2: 698, y2: 328 },
@@ -380,8 +380,8 @@ export const STAGE5_PARQUINHO_BLOCKED_ZONES: Stage5Zone[] = [
 
 /** Pontos de interação invisíveis sobre cada brinquedo. */
 export const STAGE5_PARQUINHO_HOTSPOTS: Stage5Hotspot[] = [
-  { id: 'hs_balanco', label: 'Balanço · Lara', role: 'lara', x1: 88, y1: 262, x2: 193, y2: 348, standX: 150, standY: 366 },
-  { id: 'hs_escorregador', label: 'Escorregador · Lucas', role: 'lucas', x1: 206, y1: 262, x2: 300, y2: 348, standX: 200, standY: 362 },
+  { id: 'hs_balanco', label: 'Balanço · Lara', role: 'lara', x1: 88, y1: 266, x2: 190, y2: 340, standX: 150, standY: 366 },
+  { id: 'hs_escorregador', label: 'Escorregador · Lucas', role: 'lucas', x1: 212, y1: 266, x2: 296, y2: 338, standX: 200, standY: 370 },
   { id: 'hs_pista', label: 'Pista de skate · Cris', role: 'cristian', x1: 473, y1: 270, x2: 727, y2: 436, standX: 586, standY: 338 },
   { id: 'hs_banco_laura', label: 'Banco · Laura', role: 'laura', x1: 217, y1: 222, x2: 270, y2: 250, standX: 284, standY: 240 },
   { id: 'hs_banco_grazi', label: 'Banco · Grazi (início)', role: 'grazi', x1: 217, y1: 222, x2: 270, y2: 250, standX: 312, standY: 240 },

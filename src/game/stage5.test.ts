@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   advanceDialogue,
   findNearestInteractable,
+  movePlayer,
   skipIntroCutscene,
   stepSimulationTimers,
   triggerInteraction,
@@ -24,6 +25,7 @@ import {
   getStage5PhoneCallSnapshot,
   restartStage5KarateMinigame,
   startStage5KarateMinigame,
+  startStage5ParkReunionExplore,
   startStage5PregnancyTimePassage,
   triggerStage5KarateInput,
 } from './stage5Rules';
@@ -404,4 +406,41 @@ test('Stage 5 Etapas 4 a 8: pregnancy time passage ("Alguns meses depois" in apa
   sim = finishStage5Ending(sim);
   assert.equal(sim.questPhase, 'stage_complete');
 });
+
+test('Stage 5 Etapa 7: Grazi can physically walk from spawn through both playground entrances to interact with Lucas and Lara', () => {
+  let sim = startStage5ParkReunionExplore(createStage5Simulation(true), false);
+  const walkTo = (targetX: number, targetY: number, maxSteps = 220) => {
+    for (let i = 0; i < maxSteps; i++) {
+      const dx = targetX - sim.player.x;
+      const dy = targetY - sim.player.y;
+      if (Math.hypot(dx, dy) < 4) break;
+      sim = movePlayer(sim, dx, dy, 1 / 30);
+    }
+    assert.ok(
+      Math.hypot(targetX - sim.player.x, targetY - sim.player.y) < 12,
+      `Failed to walk to (${targetX}, ${targetY}); stopped at (${sim.player.x.toFixed(1)}, ${sim.player.y.toFixed(1)})`,
+    );
+  };
+
+  // Path 1: Enter via the right playground doorway -> corridor between slide and seesaw -> Lucas & Lara
+  walkTo(360, 240);
+  walkTo(360, 348);
+  walkTo(260, 348);
+  walkTo(175, 362);
+
+  const nearLucas = findNearestInteractable(sim);
+  assert.ok(nearLucas && nearLucas.dialogueId === 's5_park_talk_lucas');
+
+  walkTo(150, 386);
+  const nearLara = findNearestInteractable(sim);
+  assert.ok(nearLara && nearLara.dialogueId === 's5_park_talk_lara');
+
+  // Path 2: Exit and re-enter via the bottom playground doorway -> grass corridor -> inside playground
+  walkTo(188, 392);
+  walkTo(188, 448);
+  walkTo(360, 448);
+  walkTo(188, 448);
+  walkTo(188, 392);
+});
+
 
