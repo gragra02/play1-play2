@@ -26,7 +26,7 @@ import s5BercoLaraGradeFrontalUrl from '../assets/images/s5_berco_lara_grade_fro
 import s5EnxovalLaraUrl from '../assets/images/s5_enxoval_lara.png';
 import s5KarateChampionshipGymUrl from '../assets/images/s5_karate_championship_gym.jpg';
 import s5MobileLaraUrl from '../assets/images/s5_mobile_lara.png';
-const fotoParquinhoPixelUrl = '/assets/aistudio/lara_lucas_cris_b24c87e9.jfif';
+const fotoParquinhoPixelUrl = './assets/aistudio/lara_lucas_cris_b24c87e9.jfif';
 import s5ParquinhoIgrejaUrl from '../assets/images/s5_parquinho_igreja.jpg';
 import s5PonteImaruimCondoUrl from '../assets/images/s5_ponte_imaruim_condo.jpg';
 import s5QuartoLaraUrl from '../assets/images/s5_quarto_lara.jpg';
