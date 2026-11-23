@@ -2367,11 +2367,14 @@ export function renderStage4World(
     queue.push({
       y: bikeY,
       draw: () => {
-        const referenceSkinDrawn =
-          passengerOnBike &&
+        if (passengerOnBike) {
           drawS4BicycleCoupleSkin(ctx, bikeX, bikeY, t, bikePhysics);
-        if (!referenceSkinDrawn) {
-          drawBicycleCouple(ctx, bikeX, bikeY, t, bikePhysics, passengerOnBike, false);
+        } else {
+          // Ariel aguardando a Grazi na saída da escola (sem bicicleta desenhada por código)
+          drawAdultAriel(ctx, bikeX - 8, bikeY, {
+            dir: 'right',
+            bobY: Math.sin(t * 2.4) * 0.5,
+          });
         }
 
         if (
@@ -2385,12 +2388,12 @@ export function renderStage4World(
           );
           drawAdultGrazi(
             ctx,
-            bikeX + 52 - boardingProgress * 28,
+            bikeX + 52 - boardingProgress * 36,
             bikeY,
             {
               dir: 'left',
               pregnant: false,
-              isMoving: boardingProgress < 0.8,
+              isMoving: boardingProgress < 0.85,
               walkPhase: t * 7,
             },
           );
@@ -3086,14 +3089,8 @@ export function renderStage4World(
     const speed = Math.hypot(bike.vx, bike.vy);
 
     if (bike.arrived) {
-      // Affectionate arrival interaction beside the parked bicycle at the Bus Stop / Escola Estadual
+      // Affectionate arrival interaction at the Bus Stop / Escola Estadual (zero code-drawn bicycle)
       const curbY = 9.05 * TILE_SIZE;
-      queue.push({
-        y: curbY + 18,
-        draw: () => {
-          drawParkedBicycle(ctx, bike.x - 18, curbY + 20);
-        },
-      });
       queue.push({
         y: curbY,
         draw: () => {
@@ -3113,13 +3110,11 @@ export function renderStage4World(
       queue.push({
         y: bike.y,
         draw: () => {
-          drawBicycleCouple(ctx, bike.x, bike.y, sim.elapsedSeconds, {
-            wheelAngle: bike.wheelAngle,
+          drawS4BicycleCoupleSkin(ctx, bike.x, bike.y, sim.elapsedSeconds, {
             pedalPhase: bike.pedalPhase,
-            graziSway: bike.graziSway,
             facing: bike.facing,
             speed,
-          }, true, false);
+          });
           if (speed > 20 && Math.sin(sim.elapsedSeconds * 2.8) > 0.35) {
             drawMoodIcon(ctx, bike.x - 8, bike.y - 78, 'heart');
           }

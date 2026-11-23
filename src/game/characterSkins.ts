@@ -34,7 +34,6 @@ import graziFriendDanceLeftUrl from '../assets/images/grazi_friend_dance_left_17
 import graziFriendDanceRightUrl from '../assets/images/grazi_friend_dance_right_1795054053136.jpg';
 import graziFrontUrl from '../assets/images/grazi_skin_preview_1795047906397.jpg';
 import graziShyUrl from '../assets/images/grazi_skin_shy_1795049132882.jpg';
-import graziSideUrl from '../assets/images/grazi_skin_side_1795049133077.jpg';
 import graziWalkSheetUrl from '../assets/images/grazi_walk_sheet_from_reference.png';
 import juniorFrontUrl from '../assets/images/junior_skin_front_1795049138153.jpg';
 import lauraFrontUrl from '../assets/images/laura_skin_preview_1795047930932.jpg';
@@ -68,12 +67,33 @@ import s4PregnancyEmbraceUrl from '../assets/images/s4_pregnancy_reveal_embrace.
 import arielLigacaoSheetUrl from '../assets/images/ariel_ligacao_sheet.png';
 import graziLigacaoSheetUrl from '../assets/images/grazi_ligacao_sheet.png';
 import s5Cristian7yoPerfilUrl from '../assets/images/s5_cristian_7yo_perfil_1795404680160.jpg';
+import s5Cristian7yoWalkSheetUrl from '../assets/images/s5_cristian_7yo_walk_sheet.png';
 import s5CristianKarateWalkSheetUrl from '../assets/images/s5_cristian_karate_walk_sheet.png';
 import s5CristianKarateKataSheetUrl from '../assets/images/s5_cristian_karate_kata_sheet.png';
 import s5LaraBabySheetUrl from '../assets/images/s5_lara_baby_sheet.png';
 import s5Lara2yoWalkSheetUrl from '../assets/images/s5_lara_2yo_walk_sheet.png';
 import s5Lara2yoDanceSheetUrl from '../assets/images/s5_lara_2yo_dance_sheet.png';
 import s5Lucas5yoWalkSheetUrl from '../assets/images/s5_lucas_5yo_walk_sheet.png';
+import s6ArielAniversarioSheetUrl from '../assets/images/s6_ariel_aniversario_sheet.png';
+import s6ArielAtualWalkSheetUrl from '../assets/images/s6_ariel_atual_walk_sheet.png';
+import s6ArielDesanimoSheetUrl from '../assets/images/s6_ariel_desanimo_sheet.png';
+import s6ArielPiaSheetUrl from '../assets/images/s6_ariel_pia_sheet.png';
+import s6ArielPoolSheetUrl from '../assets/images/s6_ariel_piscina_sheet.png';
+import s6ArielVideogameSheetUrl from '../assets/images/s6_ariel_videogame_sheet.png';
+import s6Cris12yoPoolSheetUrl from '../assets/images/s6_cris_12yo_piscina_sheet.png';
+import s6Cris12yoWalkSheetUrl from '../assets/images/s6_cris_12yo_walk_sheet.png';
+import s6Cris19yoVideogameSheetUrl from '../assets/images/s6_cris_19yo_videogame_sheet.png';
+import s6CrisAdultoAniversarioSheetUrl from '../assets/images/s6_cris_adulto_aniversario_sheet.png';
+import s6GraziAniversarioSheetUrl from '../assets/images/s6_grazi_aniversario_sheet.png';
+import s6GraziAtualWalkSheetUrl from '../assets/images/s6_grazi_46_walk_sheet.png';
+import s6GraziPoolSheetUrl from '../assets/images/s6_grazi_piscina_sheet.png';
+import s6GraziVideogameSheetUrl from '../assets/images/s6_grazi_videogame_sheet.png';
+import s6Lara15yoVideogameSheetUrl from '../assets/images/s6_lara_15yo_videogame_sheet.png';
+import s6Lara5yoPoolSheetUrl from '../assets/images/s6_lara_5yo_piscina_sheet.png';
+import s6Lara5yoWalkSheetUrl from '../assets/images/s6_lara_5yo_walk_sheet.png';
+import s6LaraAdultaAniversarioSheetUrl from '../assets/images/s6_lara_adulta_aniversario_sheet.png';
+import s6ManuAniversarioSheetUrl from '../assets/images/s6_manu_aniversario_sheet.png';
+import s6MarquinhoAniversarioSheetUrl from '../assets/images/s6_marquinho_aniversario_sheet.png';
 import {
   type ProcessedSprite,
   getCachedTransparentSprite,
@@ -85,7 +105,7 @@ export const STAGE4_MOTHER_IN_LAW_SKIN_URL: string = s4MotherInLawUrl;
 export const SKIN_URLS = {
   graziFront: graziFrontUrl,
   graziBack: graziBackUrl,
-  graziSide: graziSideUrl,
+  graziSide: graziShyUrl,
   graziAmused: graziAmusedUrl,
   graziShy: graziShyUrl,
 
@@ -158,6 +178,7 @@ const WALK_SHEET_URLS = {
   s4BicycleCouple: s4BicycleCoupleWalkSheetUrl,
   lauraLeoCouple: lauraLeoWalkTogetherUrl,
   leo: leoWalkSheetUrl,
+  s5Cristian7yoWalk: s5Cristian7yoWalkSheetUrl,
   s5CristianKarateWalk: s5CristianKarateWalkSheetUrl,
   s5CristianKarateKata: s5CristianKarateKataSheetUrl,
   s5LaraBaby: s5LaraBabySheetUrl,
@@ -166,6 +187,26 @@ const WALK_SHEET_URLS = {
   s5Lucas5yoWalk: s5Lucas5yoWalkSheetUrl,
   s5GraziPhone: graziLigacaoSheetUrl,
   s5ArielPhone: arielLigacaoSheetUrl,
+  s6Cris12yoWalk: s6Cris12yoWalkSheetUrl,
+  s6Lara5yoWalk: s6Lara5yoWalkSheetUrl,
+  s6ArielPool: s6ArielPoolSheetUrl,
+  s6GraziPool: s6GraziPoolSheetUrl,
+  s6Cris12yoPool: s6Cris12yoPoolSheetUrl,
+  s6Lara5yoPool: s6Lara5yoPoolSheetUrl,
+  s6GraziVideogame: s6GraziVideogameSheetUrl,
+  s6ArielVideogame: s6ArielVideogameSheetUrl,
+  s6Cris19yoVideogame: s6Cris19yoVideogameSheetUrl,
+  s6Lara15yoVideogame: s6Lara15yoVideogameSheetUrl,
+  s6ArielDesanimo: s6ArielDesanimoSheetUrl,
+  s6ArielPia: s6ArielPiaSheetUrl,
+  s6GraziAtualWalk: s6GraziAtualWalkSheetUrl,
+  s6ArielAtualWalk: s6ArielAtualWalkSheetUrl,
+  s6ArielBirthday: s6ArielAniversarioSheetUrl,
+  s6GraziBirthday: s6GraziAniversarioSheetUrl,
+  s6CrisAdultoBirthday: s6CrisAdultoAniversarioSheetUrl,
+  s6LaraAdultaBirthday: s6LaraAdultaAniversarioSheetUrl,
+  s6ManuBirthday: s6ManuAniversarioSheetUrl,
+  s6MarquinhoBirthday: s6MarquinhoAniversarioSheetUrl,
 } as const;
 type WalkSheetCharacter = keyof typeof WALK_SHEET_URLS;
 const walkSheetImages = new Map<WalkSheetCharacter, HTMLImageElement>();
@@ -234,6 +275,7 @@ export function preloadAllCharacterSkins(): void {
   getCharacterWalkSheetImage('s4BicycleCouple');
   getCharacterWalkSheetImage('lauraLeoCouple');
   getCharacterWalkSheetImage('leo');
+  getCharacterWalkSheetImage('s5Cristian7yoWalk');
   getCharacterWalkSheetImage('s5CristianKarateWalk');
   getCharacterWalkSheetImage('s5CristianKarateKata');
   getCharacterWalkSheetImage('s5LaraBaby');
@@ -242,6 +284,26 @@ export function preloadAllCharacterSkins(): void {
   getCharacterWalkSheetImage('s5Lucas5yoWalk');
   getCharacterWalkSheetImage('s5GraziPhone');
   getCharacterWalkSheetImage('s5ArielPhone');
+  getCharacterWalkSheetImage('s6Cris12yoWalk');
+  getCharacterWalkSheetImage('s6Lara5yoWalk');
+  getCharacterWalkSheetImage('s6ArielPool');
+  getCharacterWalkSheetImage('s6GraziPool');
+  getCharacterWalkSheetImage('s6Cris12yoPool');
+  getCharacterWalkSheetImage('s6Lara5yoPool');
+  getCharacterWalkSheetImage('s6GraziVideogame');
+  getCharacterWalkSheetImage('s6ArielVideogame');
+  getCharacterWalkSheetImage('s6Cris19yoVideogame');
+  getCharacterWalkSheetImage('s6Lara15yoVideogame');
+  getCharacterWalkSheetImage('s6ArielDesanimo');
+  getCharacterWalkSheetImage('s6ArielPia');
+  getCharacterWalkSheetImage('s6GraziAtualWalk');
+  getCharacterWalkSheetImage('s6ArielAtualWalk');
+  getCharacterWalkSheetImage('s6ArielBirthday');
+  getCharacterWalkSheetImage('s6GraziBirthday');
+  getCharacterWalkSheetImage('s6CrisAdultoBirthday');
+  getCharacterWalkSheetImage('s6LaraAdultaBirthday');
+  getCharacterWalkSheetImage('s6ManuBirthday');
+  getCharacterWalkSheetImage('s6MarquinhoBirthday');
   getS4GraziPregnantWalkSheetImage();
   // Prioritize active-stage skins lazily via getSkinSprite() on first render;
   // gently trickle-preload remaining skins in background without blocking the main thread.

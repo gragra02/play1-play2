@@ -31,8 +31,21 @@ import s5ParquinhoIgrejaUrl from '../assets/images/s5_parquinho_igreja.jpg';
 import s5PonteImaruimCondoUrl from '../assets/images/s5_ponte_imaruim_condo.jpg';
 import s5QuartoLaraUrl from '../assets/images/s5_quarto_lara.jpg';
 import s5TrabalhoArielKoerichUrl from '../assets/images/s5_trabalho_ariel_koerich.jpg';
+import s6AbracoFamiliaUrl from '../assets/images/s6_abraco_familia.png';
+import s6BoloAniversarioUrl from '../assets/images/s6_bolo_aniversario.png';
+import s6CasalCamaTvUrl from '../assets/images/s6_casal_cama_tv.png';
+import s6CozinhaPiaUrl from '../assets/images/s6_cozinha_pia.jpg';
+import s6FxPiaAguaUrl from '../assets/images/s6_fx_pia_agua_sheet.png';
+import s6FxVelasBoloUrl from '../assets/images/s6_fx_velas_bolo_sheet.png';
+import s6PiscinaCondominioUrl from '../assets/images/s6_piscina_condominio.jpg';
+import s6QuartoCasalArrumadoUrl from '../assets/images/s6_quarto_casal_arrumado.jpg';
+import s6SalaAniversarioUrl from '../assets/images/s6_sala_aniversario.jpg';
+import s6SalaFamiliaUrl from '../assets/images/s6_sala_familia.jpg';
+import s6SalaVideogameFrontalUrl from '../assets/images/s6_sala_videogame_frontal.jpg';
+import s6SalaVideogameTeensUrl from '../assets/images/s6_sala_videogame_teens.jpg';
+import s6TelaFinalVolume1Url from '../assets/images/s6_tela_final_volume1.jpg';
 import salaEstarNoiteFilmeUrl from '../assets/images/sala_estar_noite_filme_1795121344494.jpg';
-import type { Stage3MapId, Stage4MapId, Stage5MapId } from './types';
+import type { Stage3MapId, Stage4MapId, Stage5MapId, Stage6MapId } from './types';
 
 const STAGE3_BACKDROP_URLS: Record<Stage3MapId, string> = {
   neighborhood_street: caminhoNovoStreetUrl,
@@ -60,6 +73,16 @@ const STAGE5_BACKDROP_URLS: Record<Stage5MapId, string> = {
   // Etapa 7 (parquinho em frente à igreja): fundo pronto 1264x848, sem desenho por código.
   parquinho_igreja: s5ParquinhoIgrejaUrl,
   ponte_imaruim_condo: s5PonteImaruimCondoUrl,
+};
+
+const STAGE6_BACKDROP_URLS: Record<Stage6MapId, string> = {
+  s6_sala_familia: s6SalaFamiliaUrl,
+  s6_piscina_condominio: s6PiscinaCondominioUrl,
+  s6_sala_videogame_teens: s6SalaVideogameFrontalUrl,
+  s6_quarto_casal_noite: s6QuartoCasalArrumadoUrl,
+  s6_cozinha_pia: s6CozinhaPiaUrl,
+  s6_sala_aniversario: s6SalaAniversarioUrl,
+  s6_tela_final_volume1: s6TelaFinalVolume1Url,
 };
 
 const ALL_ENVIRONMENT_URLS: string[] = [
@@ -90,6 +113,19 @@ const ALL_ENVIRONMENT_URLS: string[] = [
   fotoParquinhoPixelUrl,
   s5PonteImaruimCondoUrl,
   s5TrabalhoArielKoerichUrl,
+  s6SalaFamiliaUrl,
+  s6PiscinaCondominioUrl,
+  s6SalaVideogameFrontalUrl,
+  s6SalaVideogameTeensUrl,
+  s6QuartoCasalArrumadoUrl,
+  s6CasalCamaTvUrl,
+  s6CozinhaPiaUrl,
+  s6FxPiaAguaUrl,
+  s6SalaAniversarioUrl,
+  s6BoloAniversarioUrl,
+  s6FxVelasBoloUrl,
+  s6TelaFinalVolume1Url,
+  s6AbracoFamiliaUrl,
 ];
 
 const loadedImages = new Map<string, HTMLImageElement>();
@@ -162,6 +198,30 @@ export function getStage5LaraLayette(): HTMLImageElement | null {
 
 export function getStage5ArielWorkBackdrop(): HTMLImageElement | null {
   return getOrLoadImage(s5TrabalhoArielKoerichUrl);
+}
+
+export function getStage6MapBackdrop(mapId: Stage6MapId): HTMLImageElement | null {
+  return getOrLoadImage(STAGE6_BACKDROP_URLS[mapId]);
+}
+
+export function getStage6FamilyHugSprite(): HTMLImageElement | null {
+  return getOrLoadImage(s6AbracoFamiliaUrl);
+}
+
+export function getStage6CoupleBedTvSprite(): HTMLImageElement | null {
+  return getOrLoadImage(s6CasalCamaTvUrl);
+}
+
+export function getStage6SinkWaterFxSprite(): HTMLImageElement | null {
+  return getOrLoadImage(s6FxPiaAguaUrl);
+}
+
+export function getStage6BirthdayCakeSprite(): HTMLImageElement | null {
+  return getOrLoadImage(s6BoloAniversarioUrl);
+}
+
+export function getStage6BirthdayCandlesFxSprite(): HTMLImageElement | null {
+  return getOrLoadImage(s6FxVelasBoloUrl);
 }
 
 export function getCaminhoNovoTravelBackdrop(): HTMLImageElement | null {

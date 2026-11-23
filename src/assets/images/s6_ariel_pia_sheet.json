@@ -1,0 +1,11 @@
+{
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "cols": 3,
+  "rows": 1,
+  "frames": [
+    "ready",
+    "plunging",
+    "celebrating"
+  ]
+}

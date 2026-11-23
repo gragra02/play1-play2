@@ -1,0 +1,10 @@
+{
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "cols": 2,
+  "rows": 1,
+  "frames": [
+    "wish",
+    "blow"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "frameWidth": 96,
+  "frameHeight": 128,
+  "cols": 3,
+  "rows": 4,
+  "directions": [
+    "down",
+    "left",
+    "right",
+    "up"
+  ]
+}

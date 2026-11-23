@@ -1,0 +1,42 @@
+{
+  "image": "s6_ariel_atual_walk_sheet.png",
+  "columns": 3,
+  "rows": [
+    {
+      "direction": "down",
+      "frames": [
+        "idle",
+        "stepA",
+        "stepB"
+      ]
+    },
+    {
+      "direction": "left",
+      "frames": [
+        "idle",
+        "stepA",
+        "stepB"
+      ]
+    },
+    {
+      "direction": "right",
+      "frames": [
+        "idle",
+        "stepA",
+        "stepB"
+      ]
+    },
+    {
+      "direction": "up",
+      "frames": [
+        "idle",
+        "stepA",
+        "stepB"
+      ]
+    }
+  ],
+  "cell": {
+    "width": 119,
+    "height": 242
+  }
+}

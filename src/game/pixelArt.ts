@@ -1012,7 +1012,7 @@ export function drawGraziSprite(
   if (opts.dir === 'up') {
     skinUrl = SKIN_URLS.graziBack;
   } else if (opts.dir === 'left' || opts.dir === 'right') {
-    skinUrl = SKIN_URLS.graziSide;
+    skinUrl = SKIN_URLS.graziShy;
     flipX = opts.dir === 'left';
   } else if (emo === 'amused' || emo === 'happy') {
     skinUrl = SKIN_URLS.graziAmused;

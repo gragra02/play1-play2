@@ -25,6 +25,8 @@ import type { ProcessedSprite } from './spriteSheet';
 import type { ParticlePool } from './sprites';
 import { drawMoodIcon } from './stage3Environments';
 import {
+  S5_APARTMENT_CHAR_SCALE,
+  S5_LARA_ROOM_CHAR_SCALE,
   STAGE5_APARTMENT_EXIT_POS,
   STAGE5_GUESSER_DOOR_POS,
   STAGE5_LARA_ARRIVAL_LAYOUT,
@@ -359,6 +361,34 @@ function drawCristian7yo(
           flipX,
         },
       );
+    }
+  }
+
+  if (!drawn && !opts.karateGi && !opts.profileSprite) {
+    const casualWalkSheet = getCharacterWalkSheetImage('s5Cristian7yoWalk');
+    if (casualWalkSheet && casualWalkSheet.complete && casualWalkSheet.naturalWidth > 0) {
+      const row = dir === 'down' ? 0 : dir === 'left' ? 1 : dir === 'right' ? 2 : 3;
+      const col = opts.isMoving ? (step > 0.3 ? 1 : step < -0.3 ? 2 : 0) : 0;
+      const cellW = casualWalkSheet.naturalWidth / 3;
+      const cellH = casualWalkSheet.naturalHeight / 4;
+      const drawH = Math.round(44 * GLOBAL_CHAR_SCALE * boost);
+      const drawW = Math.round(drawH * (cellW / Math.max(1, cellH)));
+      const footY = Math.round(y + bob + 8.5 + drawH * (4 / 128));
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(
+        casualWalkSheet,
+        Math.round(col * cellW),
+        Math.round(row * cellH),
+        Math.round(cellW),
+        Math.round(cellH),
+        Math.round(x - drawW / 2),
+        footY - drawH,
+        drawW,
+        drawH,
+      );
+      ctx.restore();
+      drawn = true;
     }
   }
 
@@ -1210,6 +1240,7 @@ export function renderStage5World(
         draw: () => {
           drawAdultAriel(ctx, L.ariel.x, L.ariel.y, {
             dir: 'right',
+            scaleBoost: S5_LARA_ROOM_CHAR_SCALE,
           });
         },
       },
@@ -1219,6 +1250,7 @@ export function renderStage5World(
           drawAdultGrazi(ctx, L.grazi.x, L.grazi.y, {
             dir: 'right',
             pregnant: false,
+            scaleBoost: S5_LARA_ROOM_CHAR_SCALE,
           });
         },
       },
@@ -1230,6 +1262,7 @@ export function renderStage5World(
             isMoving: crisIsWalking,
             walkPhase: s5.cutsceneElapsed * 7,
             profileSprite: !crisIsWalking,
+            scaleBoost: S5_LARA_ROOM_CHAR_SCALE,
           });
         },
       },
@@ -1249,7 +1282,7 @@ export function renderStage5World(
         draw: () => {
           drawLaraBaby(ctx, L.lara.x, L.lara.y, t, {
             poseIndex: 1,
-            targetHeight: 20,
+            targetHeight: 26,
           });
         },
       },
@@ -1289,6 +1322,7 @@ export function renderStage5World(
           drawAdultGrazi(ctx, L.grazi.x, L.grazi.y, {
             dir: 'right',
             bobY: Math.sin(t * 5 + 1) * 1.0,
+            scaleBoost: S5_APARTMENT_CHAR_SCALE,
           });
         },
       },
@@ -1298,6 +1332,7 @@ export function renderStage5World(
           drawAdultAriel(ctx, L.ariel.x, L.ariel.y, {
             dir: 'left',
             bobY: Math.sin(t * 5) * 1.0,
+            scaleBoost: S5_APARTMENT_CHAR_SCALE,
           });
         },
       },
@@ -1307,6 +1342,7 @@ export function renderStage5World(
           drawCristian7yo(ctx, L.cris.x, L.cris.y, {
             dir: 'right',
             bobY: crisLaughBob,
+            scaleBoost: S5_APARTMENT_CHAR_SCALE,
           });
         },
       },
@@ -1316,7 +1352,7 @@ export function renderStage5World(
           drawLara2yo(ctx, laraX, L.lara.y, {
             isDancing: true,
             danceElapsed: s5.cutsceneElapsed,
-            scaleBoost: 1.14,
+            scaleBoost: S5_APARTMENT_CHAR_SCALE,
           });
         },
       },
@@ -1539,6 +1575,13 @@ export function renderStage5World(
       }
     }
 
+    const exploreScaleBoost =
+      s5.mapId === 'bela_vista_apartment'
+        ? S5_APARTMENT_CHAR_SCALE
+        : s5.mapId === 'bela_vista_lara_room'
+          ? S5_LARA_ROOM_CHAR_SCALE
+          : 1.0;
+
     for (const npc of sim.npcs) {
       if (!npc.visible) continue;
       drawables.push({
@@ -1551,6 +1594,7 @@ export function renderStage5World(
             drawAdultAriel(ctx, npc.x, npc.y, {
               dir: npc.dir,
               isMoving: false,
+              scaleBoost: exploreScaleBoost,
             });
           } else if (npc.role === 'cristian') {
             if (isParkLive) {
@@ -1560,23 +1604,27 @@ export function renderStage5World(
               dir: npc.dir,
               isMoving: isParkLive,
               walkPhase: npc.dancePhaseOffset,
+              scaleBoost: exploreScaleBoost,
             });
           } else if (npc.role === 'lara') {
             drawLara2yo(ctx, npc.x, npc.y, {
               dir: npc.dir,
               isMoving: isParkLive,
               walkPhase: npc.dancePhaseOffset,
+              scaleBoost: exploreScaleBoost,
             });
           } else if (npc.role === 'lucas') {
             drawLucas5yo(ctx, npc.x, npc.y, {
               dir: npc.dir,
               isMoving: isParkLive,
               walkPhase: npc.dancePhaseOffset,
+              scaleBoost: exploreScaleBoost,
             });
           } else if (npc.role === 'laura') {
             drawLauraSprite(ctx, npc.x, npc.y, {
               dir: npc.dir,
               isMoving: false,
+              scaleBoost: exploreScaleBoost,
             });
           }
         },
@@ -1591,6 +1639,7 @@ export function renderStage5World(
           isMoving: sim.player.isMoving,
           walkPhase: sim.player.walkDistance * 0.16,
           pregnant: s5.graziPregnant,
+          scaleBoost: exploreScaleBoost,
         });
       },
     });

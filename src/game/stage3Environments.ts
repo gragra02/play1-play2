@@ -2436,45 +2436,8 @@ export function drawMovieNightSofaActors(
     ctx.fillRect(sx + 44, sofaTopY + 27, 98, 7);
   }
 
-  // 5. Crisp pixel-art 2-bone IK arms + hands + gripped popcorn clusters (ZERO face crossing!)
-  for (const { spec, anim, shoulderX, shoulderY } of states) {
-    if (anim.armActive <= 0.04) continue;
-    const isOuter = spec.role === 'ariel' || spec.role === 'leo';
-    const upperLen = (isOuter ? 33 : 26) * scaleFactor;
-    const foreLen = (isOuter ? 33 : 26) * scaleFactor;
-    // Outer seats arch elbow UP-OUTWARD during reach/scoop so the arm glides cleanly ABOVE neighbors' heads;
-    // inner seats & lifting/eating phases bend naturally outward-downward!
-    const archAboveNeighbor = isOuter && (anim.phase === 'reach' || anim.phase === 'scoop');
-    const bendSign: 1 | -1 = archAboveNeighbor
-      ? spec.reachSide > 0
-        ? -1
-        : 1
-      : spec.reachSide > 0
-        ? 1
-        : -1;
-    const ik = solveTwoBoneIK(
-      shoulderX,
-      shoulderY,
-      anim.handX,
-      anim.handY,
-      upperLen,
-      foreLen,
-      bendSign,
-    );
-    drawArticulatedSeatedArm(
-      ctx,
-      spec,
-      shoulderX,
-      shoulderY,
-      ik.ex,
-      ik.ey,
-      ik.hx,
-      ik.hy,
-      anim.fingersCupped,
-      anim.holdingPopcorn,
-      anim.popcornScale,
-    );
-  }
+  // 5. (Braços desenhados por código removidos para manter apenas as skins reais dos personagens
+  // assistindo ao filme no sofá com inclinação suave, risadas e reações naturais.)
 
   // 6. Subtle flickering CRT TV reflection cast gently onto the seated friends' hair & shoulders
   const tvPulse = 0.055 + 0.025 * Math.sin(t * 8.5);

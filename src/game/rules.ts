@@ -43,6 +43,15 @@ import {
   stepStage5Simulation,
   triggerStage5Interaction,
 } from './stage5Rules';
+import {
+  findNearestStage6Interactable,
+  getStage6ObjectiveText,
+  handleStage6DialogueComplete,
+  moveStage6Player,
+  skipStage6Intro,
+  stepStage6Simulation,
+  triggerStage6Interaction,
+} from './stage6Rules';
 import { STAGE_1_DIALOGUES } from './story';
 import type {
   DialogueLine,
@@ -224,6 +233,9 @@ export function skipIntroCutscene(state: SimulationState): SimulationState {
   if (state.stageId === 'stage-5') {
     return skipStage5Intro(state);
   }
+  if (state.stageId === 'stage-6') {
+    return skipStage6Intro(state);
+  }
   if (state.stageId === 'stage-4') {
     return skipStage4Intro(state);
   }
@@ -329,6 +341,9 @@ export function movePlayer(
   if (state.stageId === 'stage-5') {
     return moveStage5Player(state, inputX, inputY, dt);
   }
+  if (state.stageId === 'stage-6') {
+    return moveStage6Player(state, inputX, inputY, dt);
+  }
   if (state.stageId === 'stage-4') {
     return moveStage4Player(state, inputX, inputY, dt);
   }
@@ -413,6 +428,9 @@ export interface InteractableTarget {
 export function findNearestInteractable(state: SimulationState): InteractableTarget | null {
   if (state.stageId === 'stage-5') {
     return findNearestStage5Interactable(state);
+  }
+  if (state.stageId === 'stage-6') {
+    return findNearestStage6Interactable(state);
   }
   if (state.stageId === 'stage-4') {
     return findNearestStage4Interactable(state);
@@ -602,6 +620,9 @@ export function triggerInteraction(state: SimulationState): {
 } {
   if (state.stageId === 'stage-5') {
     return triggerStage5Interaction(state);
+  }
+  if (state.stageId === 'stage-6') {
+    return triggerStage6Interaction(state);
   }
   if (state.stageId === 'stage-4') {
     return triggerStage4Interaction(state);
@@ -800,6 +821,9 @@ export function advanceDialogue(state: SimulationState): SimulationState {
 
   if (state.stageId === 'stage-5') {
     return handleStage5DialogueComplete(baseCleared, completedDialogueId, action);
+  }
+  if (state.stageId === 'stage-6') {
+    return handleStage6DialogueComplete(baseCleared, completedDialogueId, action);
   }
   if (state.stageId === 'stage-4') {
     return handleStage4DialogueComplete(baseCleared, completedDialogueId, action);
@@ -1891,6 +1915,10 @@ export function stepSimulationTimers(state: SimulationState, dt: number): Simula
     next = stepStage5Simulation(next, dt);
   }
 
+  if (next.stageId === 'stage-6' && next.stage6) {
+    next = stepStage6Simulation(next, dt);
+  }
+
   return next;
 }
 
@@ -1900,6 +1928,9 @@ export function getObjectiveText(
 ): string {
   if (stageId === 'stage-5' && questPhase !== 'stage_complete') {
     return 'Explore o Bela Vista e viva os momentos em família';
+  }
+  if (stageId === 'stage-6' && questPhase !== 'stage_complete') {
+    return getStage6ObjectiveText({ stageId, questPhase, stage6: null } as SimulationState) || 'Fase 6 · Nossa História Continua';
   }
   switch (questPhase) {
     case 'intro_1995_street':

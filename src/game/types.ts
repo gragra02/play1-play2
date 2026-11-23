@@ -2,7 +2,7 @@ export type GameScreenState = 'title' | 'playing' | 'paused' | 'gameover';
 
 export type Direction = 'down' | 'up' | 'left' | 'right';
 
-export type StageId = 'stage-1' | 'stage-2' | 'stage-3' | 'stage-4' | 'stage-5';
+export type StageId = 'stage-1' | 'stage-2' | 'stage-3' | 'stage-4' | 'stage-5' | 'stage-6';
 
 export type QuestPhase =
   | 'intro_1995_street'
@@ -75,7 +75,22 @@ export type QuestPhase =
   | 's5_cutscene_lara_dance'
   | 's5_explore_park_reunion'
   | 's5_cutscene_park_reunion'
-  | 's5_ending_ponte_imaruim';
+  | 's5_ending_ponte_imaruim'
+  // Stage 6: Nossa História Continua (Fim do Volume 1)
+  | 's6_scene1_family_hug'
+  | 's6_explore_sala_familia'
+  | 's6_transition_pool'
+  | 's6_explore_piscina'
+  | 's6_transition_videogame'
+  | 's6_scene3_videogame'
+  | 's6_transition_bedroom'
+  | 's6_scene4_bedroom'
+  | 's6_transition_kitchen'
+  | 's6_explore_cozinha'
+  | 's6_transition_birthday'
+  | 's6_scene6_birthday'
+  | 's6_transition_final'
+  | 's6_final_volume2';
 
 export type ArielActivity =
   | 'breakdance_cap'
@@ -173,7 +188,17 @@ export interface DialogueSequence {
     | 's5_start_park_reunion_explore'
     | 's5_check_park_all_talked'
     | 's5_start_park_reunion_cutscene'
-    | 's5_start_ending_ponte_imaruim';
+    | 's5_start_ending_ponte_imaruim'
+    | 's6_scene1_finish_hug'
+    | 's6_start_videogame_transition'
+    | 's6_start_bedroom_transition'
+    | 's6_start_bedroom_bed_tv'
+    | 's6_start_kitchen_transition'
+    | 's6_start_kitchen_finale'
+    | 's6_start_birthday_transition'
+    | 's6_birthday_ready_to_blow'
+    | 's6_start_final_transition'
+    | 's6_show_volume1_endcard';
 }
 
 export type TileKind =
@@ -586,6 +611,57 @@ export interface Stage5State {
   endingReadyToFinish: boolean;
 }
 
+export type Stage6MapId =
+  | 's6_sala_familia'
+  | 's6_piscina_condominio'
+  | 's6_sala_videogame_teens'
+  | 's6_quarto_casal_noite'
+  | 's6_cozinha_pia'
+  | 's6_sala_aniversario'
+  | 's6_tela_final_volume1';
+
+export type Stage6CutsceneKind =
+  | 'none'
+  | 's6_family_hug'
+  | 's6_transition_to_pool'
+  | 's6_transition_to_videogame'
+  | 's6_videogame_family'
+  | 's6_transition_to_bedroom'
+  | 's6_bedroom_comfort'
+  | 's6_bedroom_bed_tv'
+  | 's6_transition_to_kitchen'
+  | 's6_kitchen_sink_finale'
+  | 's6_transition_to_birthday'
+  | 's6_birthday_party'
+  | 's6_transition_to_final'
+  | 's6_final_volume2'
+  | 's6_volume1_endcard';
+
+export interface Stage6State {
+  mapId: Stage6MapId;
+  locationLabel: string;
+  eraLabel: string;
+  cutscene: Stage6CutsceneKind;
+  cutsceneElapsed: number;
+  cameraFocusX: number;
+  cameraFocusY: number;
+  cameraZoom: number;
+  hugCompleted: boolean;
+  poolPlayedWith: Array<'ariel' | 'cristian' | 'lara'>;
+  videogameRound: number;
+  videogameCompleted: boolean;
+  sinkStep: number; // 0 = pronto, 1..2 = empurrando, 3 = finalizando (Grazi sai de cena e água escoa), 4 = pia desentupida!
+  sinkCompleted: boolean;
+  sinkGraziExitStartX: number;
+  sinkGraziExitStartY: number;
+  birthdayPhase: 'gathering' | 'ready_to_blow' | 'blowing' | 'celebrating';
+  birthdayCandlesLit: boolean;
+  unlockedMemories: string[];
+  recentMemoryTitle: string | null;
+  recentMemoryTimer: number;
+  endingReadyToFinish: boolean;
+}
+
 export interface StageDefinition {
   id: StageId;
   number: number;
@@ -601,6 +677,7 @@ export interface SavedProgress {
   stage3Completed: boolean;
   stage4Completed: boolean;
   stage5Completed?: boolean;
+  stage6Completed?: boolean;
   bestDanceSync: number;
   totalPlays: number;
   discoveredProps: string[];
@@ -623,6 +700,7 @@ export interface SimulationState {
   stage3: Stage3State | null;
   stage4: Stage4State | null;
   stage5?: Stage5State | null;
+  stage6?: Stage6State | null;
   elapsedSeconds: number;
   beatTimer: number;
   discoveredProps: string[];

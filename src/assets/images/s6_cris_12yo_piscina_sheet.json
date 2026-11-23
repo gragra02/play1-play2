@@ -1,0 +1,14 @@
+{
+  "image": "s6_cris_12yo_piscina_sheet.png",
+  "columns": 3,
+  "rows": 1,
+  "frames": [
+    "deck_idle",
+    "deck_walk",
+    "pool_swim"
+  ],
+  "cell": {
+    "width": 303,
+    "height": 321
+  }
+}

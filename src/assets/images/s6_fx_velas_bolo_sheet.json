@@ -1,0 +1,12 @@
+{
+  "frameWidth": 64,
+  "frameHeight": 80,
+  "cols": 4,
+  "rows": 1,
+  "frames": [
+    "flame_left",
+    "flame_mid",
+    "flame_right",
+    "smoke"
+  ]
+}

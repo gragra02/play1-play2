@@ -8,6 +8,7 @@ export const DEFAULT_PROGRESS: SavedProgress = {
   stage3Completed: false,
   stage4Completed: false,
   stage5Completed: false,
+  stage6Completed: false,
   bestDanceSync: 0,
   totalPlays: 0,
   discoveredProps: [],
@@ -56,6 +57,14 @@ export const STAGES: StageDefinition[] = [
     location: 'O Mercado Guesser, o Karatê, a Chegada da Lara e a Volta à Ponte do Imaruim',
     unlocked: true,
   },
+  {
+    id: 'stage-6',
+    number: 6,
+    year: 'Volume 1',
+    title: 'Nossa História Continua',
+    location: 'Nosso Apartamento · Família, Superação e o Convite para o Volume 2',
+    unlocked: true,
+  },
 ];
 
 export function loadProgress(): SavedProgress {
@@ -72,6 +81,7 @@ export function loadProgress(): SavedProgress {
       stage3Completed: Boolean(parsed.stage3Completed),
       stage4Completed: Boolean(parsed.stage4Completed),
       stage5Completed: Boolean(parsed.stage5Completed),
+      stage6Completed: Boolean(parsed.stage6Completed),
       bestDanceSync: typeof parsed.bestDanceSync === 'number' ? parsed.bestDanceSync : 0,
       totalPlays: typeof parsed.totalPlays === 'number' ? parsed.totalPlays : 0,
       discoveredProps: Array.isArray(parsed.discoveredProps)

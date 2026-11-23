@@ -362,13 +362,16 @@ export function isStage5QuartoLaraBoxWalkable(
 // Berço centralizado; Lara bebê dormindo dentro do berço; Cris de perfil à
 // direita olhando para ela; Grazi e Ariel à esquerda — sem cobrir rostos.
 // ============================================================================
+export const S5_APARTMENT_CHAR_SCALE = 1.45;
+export const S5_LARA_ROOM_CHAR_SCALE = 1.35;
+
 export const STAGE5_LARA_ARRIVAL_LAYOUT = {
-  crib: { x: 11.8 * TILE_SIZE, y: 10.6 * TILE_SIZE, width: 102, height: 74 },
-  lara: { x: 11.8 * TILE_SIZE - 10, y: 10.6 * TILE_SIZE - 18 },
-  crisStartX: 11.8 * TILE_SIZE + 108,
-  cris: { x: 11.8 * TILE_SIZE + 66, y: 10.6 * TILE_SIZE - 4 },
-  grazi: { x: 11.8 * TILE_SIZE - 68, y: 10.6 * TILE_SIZE - 3 },
-  ariel: { x: 11.8 * TILE_SIZE - 106, y: 10.6 * TILE_SIZE - 6 },
+  crib: { x: 11.8 * TILE_SIZE, y: 11.0 * TILE_SIZE, width: 132, height: 96 },
+  lara: { x: 11.8 * TILE_SIZE - 14, y: 11.0 * TILE_SIZE - 24 },
+  crisStartX: 11.8 * TILE_SIZE + 148,
+  cris: { x: 11.8 * TILE_SIZE + 86, y: 11.0 * TILE_SIZE - 4 },
+  grazi: { x: 11.8 * TILE_SIZE - 88, y: 11.0 * TILE_SIZE - 4 },
+  ariel: { x: 11.8 * TILE_SIZE - 138, y: 11.0 * TILE_SIZE - 8 },
 } as const;
 
 export interface Stage5FaceBounds {
@@ -407,11 +410,12 @@ export function getStage5CharacterFaceBounds(
 
 export function getStage5LaraArrivalFaceBoxes(crisX: number): Stage5FaceBounds[] {
   const L = STAGE5_LARA_ARRIVAL_LAYOUT;
+  const s = S5_LARA_ROOM_CHAR_SCALE;
   return [
-    getStage5CharacterFaceBounds('ariel', 'Ariel', L.ariel.x, L.ariel.y, Math.round(49 * 1.6)),
-    getStage5CharacterFaceBounds('grazi', 'Grazi', L.grazi.x, L.grazi.y, Math.round(48 * 1.6)),
-    getStage5CharacterFaceBounds('lara', 'Lara bebê', L.lara.x, L.lara.y, Math.round(20 * 1.6)),
-    getStage5CharacterFaceBounds('cris', 'Cris', crisX, L.cris.y, Math.round(40 * 1.6)),
+    getStage5CharacterFaceBounds('ariel', 'Ariel', L.ariel.x, L.ariel.y, Math.round(49 * 1.6 * s)),
+    getStage5CharacterFaceBounds('grazi', 'Grazi', L.grazi.x, L.grazi.y, Math.round(48 * 1.6 * s)),
+    getStage5CharacterFaceBounds('lara', 'Lara bebê', L.lara.x, L.lara.y, Math.round(26 * 1.6)),
+    getStage5CharacterFaceBounds('cris', 'Cris', crisX, L.cris.y, Math.round(40 * 1.6 * s)),
   ];
 }
 
@@ -420,24 +424,25 @@ export function getStage5LaraArrivalFaceBoxes(crisX: number): Stage5FaceBounds[]
 // Grazi, Cris e Ariel ficam em semicírculo atrás/aos lados; Lara dança livre à frente.
 // ============================================================================
 export const STAGE5_PEPELEQUINHA_DANCE_LAYOUT = {
-  grazi: { x: 11.8 * TILE_SIZE - 96, y: 10.4 * TILE_SIZE - 8 },
-  cris: { x: 11.8 * TILE_SIZE - 50, y: 10.4 * TILE_SIZE - 4 },
-  ariel: { x: 11.8 * TILE_SIZE + 78, y: 10.4 * TILE_SIZE - 8 },
-  lara: { x: 11.8 * TILE_SIZE + 8, y: 10.4 * TILE_SIZE + 22 },
+  grazi: { x: 11.8 * TILE_SIZE - 134, y: 10.5 * TILE_SIZE },
+  cris: { x: 11.8 * TILE_SIZE - 72, y: 10.7 * TILE_SIZE },
+  ariel: { x: 11.8 * TILE_SIZE + 114, y: 10.5 * TILE_SIZE },
+  lara: { x: 11.8 * TILE_SIZE + 12, y: 11.75 * TILE_SIZE },
 } as const;
 
 export function getStage5PepelequinhaDanceFaceBoxes(swayX: number): Stage5FaceBounds[] {
   const L = STAGE5_PEPELEQUINHA_DANCE_LAYOUT;
+  const s = S5_APARTMENT_CHAR_SCALE;
   return [
-    getStage5CharacterFaceBounds('grazi', 'Grazi', L.grazi.x, L.grazi.y, Math.round(48 * 1.6)),
-    getStage5CharacterFaceBounds('cris', 'Cris', L.cris.x, L.cris.y, Math.round(40 * 1.6)),
-    getStage5CharacterFaceBounds('ariel', 'Ariel', L.ariel.x, L.ariel.y, Math.round(49 * 1.6)),
+    getStage5CharacterFaceBounds('grazi', 'Grazi', L.grazi.x, L.grazi.y, Math.round(48 * 1.6 * s)),
+    getStage5CharacterFaceBounds('cris', 'Cris', L.cris.x, L.cris.y, Math.round(40 * 1.6 * s)),
+    getStage5CharacterFaceBounds('ariel', 'Ariel', L.ariel.x, L.ariel.y, Math.round(49 * 1.6 * s)),
     getStage5CharacterFaceBounds(
       'lara',
       'Lara (2 anos)',
       L.lara.x + swayX,
       L.lara.y,
-      Math.round(30 * 1.14 * 1.6),
+      Math.round(30 * 1.6 * s),
     ),
   ];
 }

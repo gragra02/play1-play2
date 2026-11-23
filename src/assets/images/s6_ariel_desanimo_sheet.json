@@ -1,0 +1,13 @@
+{
+  "image": "s6_ariel_desanimo_sheet.png",
+  "columns": 2,
+  "rows": 1,
+  "frames": [
+    "desanimo",
+    "olhando_aliviado"
+  ],
+  "cell": {
+    "width": 350,
+    "height": 616
+  }
+}

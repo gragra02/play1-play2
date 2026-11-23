@@ -77,6 +77,21 @@ import {
   startStage4VideogameScene,
 } from './game/stage4Rules';
 import { renderStage5World, toggleStage5DebugOverlay } from './game/stage5Renderer';
+import { renderStage6World, toggleStage6DebugOverlay } from './game/stage6Renderer';
+import {
+  advanceStage6VideogameRound,
+  blowStage6BirthdayCandles,
+  completeStage6Volume1,
+  createStage6Simulation,
+  startStage6BedroomBedTv,
+  startStage6BedroomComfort,
+  startStage6BirthdayScene,
+  startStage6FinalScene,
+  startStage6FinalTransition,
+  startStage6KitchenExplore,
+  startStage6PoolExplore,
+  startStage6VideogameScene,
+} from './game/stage6Rules';
 import {
   advanceStage5PregnancyCallCutscene,
   createStage5Simulation,
@@ -173,6 +188,20 @@ function getDesiredMusicMode(sim: SimulationState): MusicMode {
     }
     return 'afternoon_warm';
   }
+  if (sim.stageId === 'stage-6' && sim.stage6) {
+    if (
+      sim.stage6.cutscene === 's6_family_hug' ||
+      sim.stage6.cutscene === 's6_transition_to_bedroom' ||
+      sim.stage6.cutscene === 's6_bedroom_comfort' ||
+      sim.stage6.cutscene === 's6_bedroom_bed_tv' ||
+      sim.stage6.cutscene === 's6_transition_to_final' ||
+      sim.stage6.cutscene === 's6_final_volume2' ||
+      sim.stage6.cutscene === 's6_volume1_endcard'
+    ) {
+      return 'slow_romantic';
+    }
+    return 'afternoon_warm';
+  }
   return 'club';
 }
 
@@ -260,6 +289,20 @@ function createSimulationFromQuery(
   s4SceneParam: string | null,
   s5SceneParam: string | null = null,
 ): SimulationState {
+  if (initialStage === 'stage-6') {
+    const sim = createStage6Simulation(false, unlockedMemories);
+    if (typeof window !== 'undefined') {
+      const s6Scene = new URLSearchParams(window.location.search).get('s6scene');
+      if (s6Scene === 'piscina') return startStage6PoolExplore(sim);
+      if (s6Scene === 'videogame') return startStage6VideogameScene(sim);
+      if (s6Scene === 'quarto') return startStage6BedroomComfort(sim);
+      if (s6Scene === 'cama') return startStage6BedroomBedTv(sim);
+      if (s6Scene === 'cozinha' || s6Scene === 'pia') return startStage6KitchenExplore(sim);
+      if (s6Scene === 'aniversario' || s6Scene === 'bolo') return startStage6BirthdayScene(sim);
+      if (s6Scene === 'final' || s6Scene === 'volume2') return startStage6FinalScene(sim);
+    }
+    return sim;
+  }
   if (initialStage === 'stage-5') {
     let sim = createStage5Simulation(
       s5SceneParam !== null && s5SceneParam !== 'intro',
@@ -553,8 +596,10 @@ export default function App() {
   const autostart = params?.get('autostart') === '1';
   const stageParam = params?.get('stage');
   const queryStage: StageId =
-    stageParam === '5'
-      ? 'stage-5'
+    stageParam === '6'
+      ? 'stage-6'
+      : stageParam === '5'
+        ? 'stage-5'
       : stageParam === '4'
         ? 'stage-4'
         : stageParam === '3'
@@ -771,7 +816,9 @@ export default function App() {
       setActiveStageId(stageId);
 
       simRef.current =
-        stageId === 'stage-5'
+        stageId === 'stage-6'
+          ? createStage6Simulation(skipIntro, progressRef.current.unlockedMemories)
+          : stageId === 'stage-5'
           ? createStage5Simulation(skipIntro, progressRef.current.unlockedMemories)
           : stageId === 'stage-4'
             ? createStage4Simulation(skipIntro, progressRef.current.unlockedMemories)
@@ -1108,10 +1155,65 @@ export default function App() {
         return;
       }
 
+      if (
+        simRef.current.stageId === 'stage-6' &&
+        simRef.current.stage6?.cutscene === 's6_videogame_family' &&
+        !simRef.current.activeDialogue &&
+        (key === ' ' || key === 'enter' || key === 'e')
+      ) {
+        e.preventDefault();
+        simRef.current = advanceStage6VideogameRound(simRef.current);
+        retroAudio.playInteract();
+        syncHudIfChanged(true);
+        return;
+      }
+
+      if (
+        simRef.current.stageId === 'stage-6' &&
+        simRef.current.stage6?.cutscene === 's6_birthday_party' &&
+        simRef.current.stage6.birthdayPhase === 'ready_to_blow' &&
+        !simRef.current.activeDialogue &&
+        (key === ' ' || key === 'enter' || key === 'e')
+      ) {
+        e.preventDefault();
+        simRef.current = blowStage6BirthdayCandles(simRef.current);
+        retroAudio.playInteract();
+        syncHudIfChanged(true);
+        return;
+      }
+
+      if (
+        simRef.current.stageId === 'stage-6' &&
+        simRef.current.stage6?.cutscene === 's6_birthday_party' &&
+        simRef.current.stage6.birthdayPhase === 'celebrating' &&
+        !simRef.current.activeDialogue &&
+        (key === ' ' || key === 'enter' || key === 'e')
+      ) {
+        e.preventDefault();
+        simRef.current = startStage6FinalTransition(simRef.current);
+        retroAudio.playInteract();
+        syncHudIfChanged(true);
+        return;
+      }
+
+      if (
+        simRef.current.stageId === 'stage-6' &&
+        simRef.current.stage6?.cutscene === 's6_volume1_endcard' &&
+        !simRef.current.activeDialogue &&
+        (key === ' ' || key === 'enter' || key === 'e')
+      ) {
+        e.preventDefault();
+        simRef.current = completeStage6Volume1(simRef.current);
+        retroAudio.playInteract();
+        syncHudIfChanged(true);
+        return;
+      }
+
       if (key === 'f3') {
-        // Debug overlay do parquinho (zonas caminháveis, bloqueadas e hotspots)
+        // Debug overlay (zonas caminháveis, bloqueadas, hotspots e sobreposição de rostos)
         e.preventDefault();
         toggleStage5DebugOverlay();
+        toggleStage6DebugOverlay();
         return;
       }
 
@@ -1418,7 +1520,9 @@ export default function App() {
 
       if (currentScreen !== 'paused') {
         particlesRef.current.update(dt);
-        if (simRef.current.stageId === 'stage-5' && currentScreen !== 'title') {
+        if (simRef.current.stageId === 'stage-6' && currentScreen !== 'title') {
+          renderStage6World(ctx, simRef.current, particlesRef.current, viewW, viewH);
+        } else if (simRef.current.stageId === 'stage-5' && currentScreen !== 'title') {
           renderStage5World(ctx, simRef.current, particlesRef.current, viewW, viewH);
         } else if (simRef.current.stageId === 'stage-4' && currentScreen !== 'title') {
           renderStage4World(ctx, simRef.current, particlesRef.current, viewW, viewH);

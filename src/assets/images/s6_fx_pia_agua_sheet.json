@@ -1,0 +1,11 @@
+{
+  "frameWidth": 96,
+  "frameHeight": 96,
+  "cols": 3,
+  "rows": 1,
+  "frames": [
+    "clogged",
+    "draining",
+    "clean"
+  ]
+}
