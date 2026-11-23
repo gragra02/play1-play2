@@ -96,6 +96,7 @@ export type SpeakerId =
   | 'ariel_adult'
   | 'cristian'
   | 'lara'
+  | 'lara_baby'
   | 'lucas'
   | 'nani'
   | 'bar_man'
@@ -238,6 +239,7 @@ export type NpcRole =
   | 'friend'
   | 'cristian'
   | 'lara'
+  | 'lara_baby'
   | 'lucas'
   | 'nani'
   | 'bar_man';

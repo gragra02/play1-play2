@@ -4,7 +4,12 @@ import {
   getS4GraziPregnantWalkSheetImage,
   getSkinSprite,
 } from './characterSkins';
-import { getStage5MapBackdrop, getStage5ParkPolaroidPhoto } from './environmentArt';
+import {
+  getStage5LaraCribBody,
+  getStage5LaraCribFrontRail,
+  getStage5MapBackdrop,
+  getStage5ParkPolaroidPhoto,
+} from './environmentArt';
 import { MAP_COLS, MAP_ROWS, TILE_SIZE } from './mapData';
 import {
   GLOBAL_CHAR_SCALE,
@@ -19,14 +24,18 @@ import { drawMoodIcon } from './stage3Environments';
 import {
   STAGE5_APARTMENT_EXIT_POS,
   STAGE5_GUESSER_DOOR_POS,
+  STAGE5_LARA_ARRIVAL_LAYOUT,
   STAGE5_PARQUINHO_BLOCKED_ZONES,
   STAGE5_PARQUINHO_HOTSPOTS,
   STAGE5_PARQUINHO_PHOTO_MARK,
   STAGE5_PARQUINHO_WALK_ZONES,
   STAGE_5_KATA_MOVES,
   STAGE_5_MEMORIES,
+  findStage5FaceOverlaps,
+  getStage5CharacterFaceBounds,
+  getStage5LaraArrivalFaceBoxes,
 } from './stage5Data';
-import type { Stage5Zone } from './stage5Data';
+import type { Stage5FaceBounds, Stage5Zone } from './stage5Data';
 import { getStage5PhoneCallSnapshot } from './stage5Rules';
 import type { Direction, KarateKataMove, SimulationState } from './types';
 
@@ -296,6 +305,7 @@ function drawCristian7yo(
     karateGi?: boolean;
     kataMove?: KarateKataMove | null;
     wearingMedal?: boolean;
+    profileSprite?: boolean;
     bobY?: number;
     scaleBoost?: number;
   } = {},
@@ -341,6 +351,14 @@ function drawCristian7yo(
           flipX,
         },
       );
+    }
+  }
+
+  if (!drawn && opts.profileSprite) {
+    const profile = getSkinSprite(SKIN_URLS.s5Cristian7yoPerfil);
+    if (profile) {
+      drawCrispSprite(ctx, profile, x, y + bob, 40 * boost, dir === 'right');
+      drawn = true;
     }
   }
 
@@ -1149,36 +1167,89 @@ export function renderStage5World(
       ctx.restore();
     }
   } else if (s5.cutscene === 'lara_baby_arrival') {
-    const centerX = 11.8 * TILE_SIZE;
-    const centerY = 10.6 * TILE_SIZE;
-    const hugPhase = Math.min(1, Math.max(0, (s5.cutsceneElapsed - 1.8) / 1.8));
-    const crisOffsetX = 42 - hugPhase * 27;
+    const L = STAGE5_LARA_ARRIVAL_LAYOUT;
+    const walkProgress = Math.min(1, Math.max(0, s5.cutsceneElapsed / 2.0));
+    const easedWalk = 1 - Math.pow(1 - walkProgress, 2);
+    const crisX = L.crisStartX + (L.cris.x - L.crisStartX) * easedWalk;
+    const crisIsWalking = walkProgress < 1;
 
-    drawAdultAriel(ctx, centerX - 28, centerY - 2, {
-      dir: 'right',
-      scaleBoost: 1.08,
-    });
-    drawAdultGrazi(ctx, centerX, centerY, {
-      dir: 'right',
-      pregnant: false,
-      scaleBoost: 1.08,
-    });
-    // Baby Lara in Grazi's arms
-    drawLaraBaby(ctx, centerX + 8, centerY - 18, t, {
-      poseIndex: 0,
-      targetHeight: 22,
-    });
-    // Cris runs happily and hugs baby Lara carefully
-    drawCristian7yo(ctx, centerX + crisOffsetX, centerY + 3, {
-      dir: 'left',
-      isMoving: hugPhase > 0 && hugPhase < 1,
-      walkPhase: s5.cutsceneElapsed * 8,
-      scaleBoost: 1.08,
-    });
+    const cribBody = getStage5LaraCribBody();
+    const cribFrontRail = getStage5LaraCribFrontRail();
+    const cribFootY = Math.round(L.crib.y + 8.5);
+    const cribLeft = Math.round(L.crib.x - L.crib.width / 2);
+    const cribTop = cribFootY - L.crib.height;
 
-    if (hugPhase >= 0.85) {
-      drawMoodIcon(ctx, centerX + 10, centerY - 68, 'heart');
-      drawMoodIcon(ctx, centerX + crisOffsetX, centerY - 60, 'smile');
+    type ArrivalDrawable = { y: number; draw: () => void };
+    const drawables: ArrivalDrawable[] = [
+      {
+        y: L.ariel.y,
+        draw: () => {
+          drawAdultAriel(ctx, L.ariel.x, L.ariel.y, {
+            dir: 'right',
+          });
+        },
+      },
+      {
+        y: L.grazi.y,
+        draw: () => {
+          drawAdultGrazi(ctx, L.grazi.x, L.grazi.y, {
+            dir: 'right',
+            pregnant: false,
+          });
+        },
+      },
+      {
+        y: L.cris.y,
+        draw: () => {
+          drawCristian7yo(ctx, crisX, L.cris.y, {
+            dir: 'left',
+            isMoving: crisIsWalking,
+            walkPhase: s5.cutsceneElapsed * 7,
+            profileSprite: !crisIsWalking,
+          });
+        },
+      },
+      {
+        y: L.crib.y,
+        draw: () => {
+          if (cribBody && cribBody.complete && cribBody.naturalWidth > 0) {
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(cribBody, cribLeft, cribTop, L.crib.width, L.crib.height);
+            ctx.restore();
+          }
+        },
+      },
+      {
+        y: L.crib.y + 0.1,
+        draw: () => {
+          drawLaraBaby(ctx, L.lara.x, L.lara.y, t, {
+            poseIndex: 1,
+            targetHeight: 20,
+          });
+        },
+      },
+      {
+        y: L.crib.y + 0.2,
+        draw: () => {
+          if (cribFrontRail && cribFrontRail.complete && cribFrontRail.naturalWidth > 0) {
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(cribFrontRail, cribLeft, cribTop, L.crib.width, L.crib.height);
+            ctx.restore();
+          }
+        },
+      },
+    ];
+
+    drawables.sort((a, b) => a.y - b.y);
+    for (const item of drawables) {
+      item.draw();
+    }
+
+    if (walkProgress >= 0.9) {
+      drawMoodIcon(ctx, L.crib.x + 2, L.crib.y - 72, 'heart');
+      drawMoodIcon(ctx, crisX, L.cris.y - 62, 'smile');
     }
   } else if (s5.cutscene === 'lara_pepelequinha_dance') {
     const rugCenterX = 11.8 * TILE_SIZE;
@@ -1400,8 +1471,14 @@ export function renderStage5World(
     }
   }
 
-  if (stage5DebugOverlay && s5.mapId === 'parquinho_igreja') {
-    drawParquinhoDebugOverlay(ctx, sim);
+  if (stage5DebugOverlay) {
+    if (s5.mapId === 'parquinho_igreja') {
+      drawParquinhoDebugOverlay(ctx, sim);
+    }
+    const faceBoxes = collectStage5VisibleFaceBoxes(sim);
+    if (faceBoxes.length > 0) {
+      drawStage5FaceOverlapDebugOverlay(ctx, faceBoxes);
+    }
   }
 
   particles.draw(ctx);
@@ -1421,6 +1498,95 @@ let stage5DebugOverlay = false;
 export function toggleStage5DebugOverlay(): boolean {
   stage5DebugOverlay = !stage5DebugOverlay;
   return stage5DebugOverlay;
+}
+
+function collectStage5VisibleFaceBoxes(sim: SimulationState): Stage5FaceBounds[] {
+  const s5 = sim.stage5;
+  if (!s5) return [];
+
+  if (s5.cutscene === 'lara_baby_arrival') {
+    const L = STAGE5_LARA_ARRIVAL_LAYOUT;
+    const walkProgress = Math.min(1, Math.max(0, s5.cutsceneElapsed / 2.0));
+    const easedWalk = 1 - Math.pow(1 - walkProgress, 2);
+    const crisX = L.crisStartX + (L.cris.x - L.crisStartX) * easedWalk;
+    return getStage5LaraArrivalFaceBoxes(crisX);
+  }
+
+  if (s5.cutscene === 'none') {
+    const boxes: Stage5FaceBounds[] = [
+      getStage5CharacterFaceBounds(
+        'player_grazi',
+        'Grazi',
+        sim.player.x,
+        sim.player.y,
+        Math.round(48 * GLOBAL_CHAR_SCALE),
+      ),
+    ];
+    for (const npc of sim.npcs) {
+      if (!npc.visible) continue;
+      const targetH =
+        npc.role === 'ariel'
+          ? 49
+          : npc.role === 'laura'
+            ? 48
+            : npc.role === 'cristian'
+              ? 40
+              : npc.role === 'lucas'
+                ? 36
+                : 30;
+      boxes.push(
+        getStage5CharacterFaceBounds(
+          npc.id,
+          npc.name,
+          npc.x,
+          npc.y,
+          Math.round(targetH * GLOBAL_CHAR_SCALE),
+        ),
+      );
+    }
+    return boxes;
+  }
+
+  return [];
+}
+
+function drawStage5FaceOverlapDebugOverlay(
+  ctx: CanvasRenderingContext2D,
+  faceBoxes: Stage5FaceBounds[],
+): void {
+  const overlaps = findStage5FaceOverlaps(faceBoxes);
+  const collidingIds = new Set<string>();
+  for (const ov of overlaps) {
+    collidingIds.add(ov.a.id);
+    collidingIds.add(ov.b.id);
+  }
+
+  ctx.save();
+  ctx.lineWidth = 1;
+  ctx.font = '6px monospace';
+  ctx.textAlign = 'left';
+
+  for (const box of faceBoxes) {
+    const hit = collidingIds.has(box.id);
+    ctx.strokeStyle = hit ? '#ff4d4f' : '#52e37d';
+    ctx.fillStyle = hit ? 'rgba(255, 77, 79, 0.25)' : 'rgba(82, 227, 125, 0.14)';
+    ctx.fillRect(box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1);
+    ctx.strokeRect(box.x1 + 0.5, box.y1 + 0.5, box.x2 - box.x1 - 1, box.y2 - box.y1 - 1);
+    ctx.fillStyle = hit ? '#ffb3b3' : '#d8ffdf';
+    ctx.fillText(box.label, box.x1, box.y1 - 2);
+  }
+
+  const bannerY = 18;
+  const msg =
+    overlaps.length === 0
+      ? 'F3 · Sobreposição de rostos: OK (0)'
+      : `F3 · ALERTA: ${overlaps[0].a.label} cobre rosto de ${overlaps[0].b.label}!`;
+  const bannerW = Math.max(170, msg.length * 4 + 12);
+  ctx.fillStyle = overlaps.length === 0 ? 'rgba(18, 60, 32, 0.85)' : 'rgba(140, 20, 20, 0.92)';
+  ctx.fillRect(4, bannerY, bannerW, 11);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(msg, 8, bannerY + 8);
+  ctx.restore();
 }
 
 function drawParquinhoDebugOverlay(ctx: CanvasRenderingContext2D, sim: SimulationState): void {

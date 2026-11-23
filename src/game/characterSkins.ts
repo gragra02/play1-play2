@@ -61,6 +61,7 @@ import s4GraziAdultWalkSheetUrl from '../assets/images/s4_grazi_adult_walk_sheet
 import s4GraziPregnantWalkSheetUrl from '../assets/images/s4_grazi_pregnant_walk_sheet_from_reference.png';
 import s4NaniUrl from '../assets/images/s4_nani_sprite_1795209660137.jpg';
 import s4PregnancyEmbraceUrl from '../assets/images/s4_pregnancy_reveal_embrace.jpg';
+import s5Cristian7yoPerfilUrl from '../assets/images/s5_cristian_7yo_perfil_1795404680160.jpg';
 import s5CristianKarateWalkSheetUrl from '../assets/images/s5_cristian_karate_walk_sheet.png';
 import s5CristianKarateKataSheetUrl from '../assets/images/s5_cristian_karate_kata_sheet.png';
 import s5LaraBabySheetUrl from '../assets/images/s5_lara_baby_sheet.png';
@@ -129,6 +130,7 @@ export const SKIN_URLS = {
   s4CristianToddler: s4CristianToddlerUrl,
   s4Cristian5yo: s4Cristian5yoUrl,
   s4Cristian7yo: s4Cristian7yoUrl,
+  s5Cristian7yoPerfil: s5Cristian7yoPerfilUrl,
 } as const;
 
 const ALL_SKIN_URLS: string[] = Object.values(SKIN_URLS);

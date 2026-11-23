@@ -21,6 +21,8 @@ import s4NeighborhoodBikeRoadUrl from '../assets/images/s4_neighborhood_bike_roa
 import s5ApartamentoSalaBelaVistaUrl from '../assets/images/apartamento_sala_bela_vista.png';
 import s5BelaVistaGuesserUrl from '../assets/images/s5_bela_vista_guesser.jpg';
 import s5BelaVistaParkChurchUrl from '../assets/images/s5_bela_vista_park_church.jpg';
+import s5BercoLaraCorpoUrl from '../assets/images/s5_berco_lara_corpo.png';
+import s5BercoLaraGradeFrontalUrl from '../assets/images/s5_berco_lara_grade_frontal.png';
 import s5KarateChampionshipGymUrl from '../assets/images/s5_karate_championship_gym.jpg';
 const fotoParquinhoPixelUrl = '/assets/aistudio/lara_lucas_cris_b24c87e9.jfif';
 import s5ParquinhoIgrejaUrl from '../assets/images/s5_parquinho_igreja.jpg';
@@ -73,6 +75,8 @@ const ALL_ENVIRONMENT_URLS: string[] = [
   s4MeiaAguaInteriorUrl,
   s5BelaVistaGuesserUrl,
   s5ApartamentoSalaBelaVistaUrl,
+  s5BercoLaraCorpoUrl,
+  s5BercoLaraGradeFrontalUrl,
   s5KarateChampionshipGymUrl,
   s5BelaVistaParkChurchUrl,
   s5ParquinhoIgrejaUrl,
@@ -130,6 +134,14 @@ export function getStage5MapBackdrop(mapId: Stage5MapId): HTMLImageElement | nul
 
 export function getStage5ParkPolaroidPhoto(): HTMLImageElement | null {
   return getOrLoadImage(fotoParquinhoPixelUrl);
+}
+
+export function getStage5LaraCribBody(): HTMLImageElement | null {
+  return getOrLoadImage(s5BercoLaraCorpoUrl);
+}
+
+export function getStage5LaraCribFrontRail(): HTMLImageElement | null {
+  return getOrLoadImage(s5BercoLaraGradeFrontalUrl);
 }
 
 export function getCaminhoNovoTravelBackdrop(): HTMLImageElement | null {

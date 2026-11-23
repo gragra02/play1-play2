@@ -8,6 +8,7 @@ import {
   STAGE5_APARTMENT_TV_POS,
   STAGE5_APARTMENT_WINDOW_POS,
   STAGE5_GUESSER_DOOR_POS,
+  STAGE5_LARA_ARRIVAL_LAYOUT,
   STAGE5_NURSERY_BUILD_POS,
   STAGE5_NURSERY_EXIT_POS,
   STAGE5_PARK_SKATE_POS,
@@ -51,7 +52,7 @@ export const S5_PREGNANCY_CALL_DURATION = STAGE_5_PHONE_CALL_STEPS.reduce(
   0,
 );
 export const S5_PREGNANCY_TIME_DURATION = 9.6;
-export const S5_LARA_ARRIVAL_DURATION = 8.4;
+export const S5_LARA_ARRIVAL_DURATION = 3.8;
 export const S5_LARA_DANCE_DURATION = 10.2;
 export const S5_PARK_REUNION_DURATION = 9.2;
 export const S5_ENDING_READY_DELAY = 3.8;
@@ -814,17 +815,18 @@ export function exitStage5LaraBedroomToLivingRoom(state: SimulationState): Simul
 
 export function startStage5LaraBabyArrival(state: SimulationState): SimulationState {
   if (!state.stage5) return state;
+  const crib = STAGE5_LARA_ARRIVAL_LAYOUT.crib;
   const s5 = unlockStage5Memory(
     {
       ...state.stage5,
-      mapId: 'bela_vista_apartment',
-      locationLabel: 'Apartamento no Bela Vista · Chegada da Lara',
-      eraLabel: 'Bem-vinda, Lara! · O Abraço do Irmão Cris',
+      mapId: 'bela_vista_lara_room',
+      locationLabel: 'Quarto da Lara · O Primeiro Encontro no Berço',
+      eraLabel: 'Bem-vinda, Lara! · O Cris Conhece a Irmãzinha',
       cutscene: 'lara_baby_arrival',
       cutsceneElapsed: 0,
-      cameraFocusX: 11.8 * TILE_SIZE,
-      cameraFocusY: 10.2 * TILE_SIZE,
-      cameraZoom: 1.16,
+      cameraFocusX: crib.x,
+      cameraFocusY: crib.y - 24,
+      cameraZoom: 1.08,
       graziPregnant: false,
       lara_announced: true,
       nurseryStage: 3,
@@ -1833,14 +1835,24 @@ export function stepStage5Simulation(state: SimulationState, dt: number): Simula
     };
   }
 
-  // 5. Arrival Home with Baby Lara & Cris's Hug -> followed by short emotional dialogue
+  // 5. Cris sees Baby Lara in the crib: slow zoom framing Cris & Lara -> manual dialogue (no auto-advance)
   if (s5.cutscene === 'lara_baby_arrival') {
+    const crib = STAGE5_LARA_ARRIVAL_LAYOUT.crib;
+    const zoomProgress = Math.min(1, t / S5_LARA_ARRIVAL_DURATION);
+    const easedZoom = 1 - Math.pow(1 - zoomProgress, 3);
+    const focusX = crib.x + 16 * easedZoom;
+    const focusY = crib.y - 24 - 2 * easedZoom;
+    const zoom = 1.08 + 0.4 * easedZoom;
+
     if (t >= S5_LARA_ARRIVAL_DURATION) {
       return {
         ...state,
         stage5: {
           ...s5,
-          cutsceneElapsed: t,
+          cutsceneElapsed: S5_LARA_ARRIVAL_DURATION,
+          cameraFocusX: crib.x + 16,
+          cameraFocusY: crib.y - 26,
+          cameraZoom: 1.48,
         },
         activeDialogue: STAGE_5_DIALOGUES.s5_lara_arrival_dialogue,
         dialogueLineIndex: 0,
@@ -1851,9 +1863,9 @@ export function stepStage5Simulation(state: SimulationState, dt: number): Simula
       stage5: {
         ...s5,
         cutsceneElapsed: t,
-        cameraFocusX: 11.8 * TILE_SIZE,
-        cameraFocusY: 10.2 * TILE_SIZE,
-        cameraZoom: 1.16 + Math.min(1, t / S5_LARA_ARRIVAL_DURATION) * 0.08,
+        cameraFocusX: focusX,
+        cameraFocusY: focusY,
+        cameraZoom: zoom,
       },
     };
   }
@@ -2110,30 +2122,9 @@ export function getStage5CutsceneCaption(state: SimulationState): Stage5Cutscene
   }
 
   if (cutscene === 'lara_baby_arrival') {
-    if (t < 3.8) {
-      return {
-        badge: 'CHEGADA EM CASA · BEM-VINDA, LARA!',
-        speaker: 'Grazi',
-        speakerId: 'grazi_adult',
-        emotion: 'romantic',
-        text: 'O desejo do Ariel se realizou: chegou a nossa Lara! De roupinha rosa e esse cabelinho preto todo arrepiado pra cima que nem um pica-pau!',
-      };
-    }
-    if (t < 7.6) {
-      return {
-        badge: 'O ABRAÇO DO IRMÃO MAIS VELHO',
-        speaker: 'Cris (7 anos)',
-        speakerId: 'cristian',
-        emotion: 'happy',
-        text: 'Oi, Lara! Como ela é pequenininha e linda, mãe! Deixa eu dar um abraço bem gostoso nela!',
-      };
-    }
     return {
-      badge: 'AMOR DE IRMÃOS NO BELA VISTA',
-      speaker: 'Ariel',
-      speakerId: 'ariel_adult',
-      emotion: 'romantic',
-      text: 'Olha o cuidado do Cris abraçando a irmãzinha... Nossa princesa de cabelinho de pica-pau completou a nossa casa.',
+      badge: 'QUARTO DA LARA · PRIMEIRO ENCONTRO NO BERÇO',
+      text: 'Cris se aproxima devagarinho do berço para ver a irmãzinha Lara pela primeira vez...',
     };
   }
 

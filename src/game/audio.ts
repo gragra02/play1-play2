@@ -269,6 +269,7 @@ class RetroAudioEngine {
       ariel_adult: 315,
       cristian: 690,
       lara: 740,
+      lara_baby: 760,
       lucas: 710,
       nani: 575,
       bar_man: 270,

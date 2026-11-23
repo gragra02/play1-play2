@@ -11,11 +11,14 @@ import {
 import {
   STAGE5_APARTMENT_EXIT_POS,
   STAGE5_GUESSER_DOOR_POS,
+  STAGE5_LARA_ARRIVAL_LAYOUT,
   STAGE_5_DIALOGUES,
   STAGE_5_ETAPA1_MEMORY_IDS,
   STAGE_5_KATA_MOVES,
   STAGE_5_MEMORIES,
   STAGE_5_PHONE_CALL_STEPS,
+  findStage5FaceOverlaps,
+  getStage5LaraArrivalFaceBoxes,
 } from './stage5Data';
 import {
   advanceStage5PregnancyCallCutscene,
@@ -25,6 +28,7 @@ import {
   getStage5PhoneCallSnapshot,
   restartStage5KarateMinigame,
   startStage5KarateMinigame,
+  startStage5LaraBabyArrival,
   startStage5ParkReunionExplore,
   startStage5PregnancyTimePassage,
   triggerStage5KarateInput,
@@ -441,6 +445,40 @@ test('Stage 5 Etapa 7: Grazi can physically walk from spawn through both playgro
   walkTo(360, 448);
   walkTo(188, 448);
   walkTo(188, 392);
+});
+
+test('Stage 5 Ajuste 3: Cris sees baby Lara in the crib with no face overlap, slow camera zoom, and manual-advance portraits', () => {
+  let sim = startStage5LaraBabyArrival(createStage5Simulation(true, []));
+  assert.equal(sim.stage5?.cutscene, 'lara_baby_arrival');
+  assert.equal(sim.stage5?.mapId, 'bela_vista_lara_room');
+
+  // Verify Cris starts and ends to the side of the crib, never covering Lara or parents' faces
+  const L = STAGE5_LARA_ARRIVAL_LAYOUT;
+  assert.ok(L.cris.x > L.crib.x + L.crib.width / 2);
+  assert.ok(L.cris.y < L.crib.y);
+  assert.equal(findStage5FaceOverlaps(getStage5LaraArrivalFaceBoxes(L.crisStartX)).length, 0);
+  assert.equal(findStage5FaceOverlaps(getStage5LaraArrivalFaceBoxes(L.cris.x)).length, 0);
+
+  // Slow zoom progresses over time toward framing Cris and Lara
+  const zoomStart = sim.stage5!.cameraZoom;
+  sim = stepSimulationTimers(sim, 1.5);
+  assert.ok(sim.stage5!.cameraZoom > zoomStart);
+  assert.equal(sim.activeDialogue, null);
+
+  // Completing the zoom opens the arrival dialogue with Cris emocionado and Lara dormindo portraits
+  sim = stepSimulationTimers(sim, 3.0);
+  assert.equal(sim.activeDialogue?.id, 's5_lara_arrival_dialogue');
+  assert.equal(sim.dialogueLineIndex, 0);
+
+  // Dialogue must NOT auto-advance when timers keep ticking
+  sim = stepSimulationTimers(sim, 10.0);
+  assert.equal(sim.activeDialogue?.id, 's5_lara_arrival_dialogue');
+  assert.equal(sim.dialogueLineIndex, 0);
+
+  // Verify emotional Cris portrait trigger and sleeping baby Lara portrait speaker
+  const lines = sim.activeDialogue!.lines;
+  assert.ok(lines.some((l) => l.speaker === 'cristian' && l.emotion === 'romantic'));
+  assert.ok(lines.some((l) => l.speaker === 'lara_baby'));
 });
 
 

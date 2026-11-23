@@ -307,6 +307,78 @@ export const STAGE5_APARTMENT_MESA_POS = { x: 5.4 * TILE_SIZE, y: 6.8 * TILE_SIZ
 export const STAGE5_APARTMENT_PHONE_POS = { x: 18.2 * TILE_SIZE, y: 10.6 * TILE_SIZE };
 export const STAGE5_NURSERY_BUILD_POS = { x: 11.8 * TILE_SIZE, y: 9.6 * TILE_SIZE };
 export const STAGE5_NURSERY_EXIT_POS = { x: 11.8 * TILE_SIZE, y: 12.7 * TILE_SIZE };
+
+// ============================================================================
+// AJUSTE 3 · CHEGADA DA LARA NO BERÇO (posições e checagem F3 de sobreposição)
+// Berço centralizado; Lara bebê dormindo dentro do berço; Cris de perfil à
+// direita olhando para ela; Grazi e Ariel à esquerda — sem cobrir rostos.
+// ============================================================================
+export const STAGE5_LARA_ARRIVAL_LAYOUT = {
+  crib: { x: 11.8 * TILE_SIZE, y: 10.6 * TILE_SIZE, width: 102, height: 74 },
+  lara: { x: 11.8 * TILE_SIZE - 10, y: 10.6 * TILE_SIZE - 18 },
+  crisStartX: 11.8 * TILE_SIZE + 108,
+  cris: { x: 11.8 * TILE_SIZE + 66, y: 10.6 * TILE_SIZE - 4 },
+  grazi: { x: 11.8 * TILE_SIZE - 68, y: 10.6 * TILE_SIZE - 3 },
+  ariel: { x: 11.8 * TILE_SIZE - 106, y: 10.6 * TILE_SIZE - 6 },
+} as const;
+
+export interface Stage5FaceBounds {
+  id: string;
+  label: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+export interface Stage5FaceOverlap {
+  a: Stage5FaceBounds;
+  b: Stage5FaceBounds;
+}
+
+export function getStage5CharacterFaceBounds(
+  id: string,
+  label: string,
+  footX: number,
+  footY: number,
+  drawH: number,
+): Stage5FaceBounds {
+  const headW = Math.max(14, Math.round(drawH * 0.28));
+  const headH = Math.max(12, Math.round(drawH * 0.24));
+  const topY = Math.round(footY + 8.5 - drawH + drawH * 0.06);
+  return {
+    id,
+    label,
+    x1: Math.round(footX - headW / 2),
+    y1: topY,
+    x2: Math.round(footX + headW / 2),
+    y2: topY + headH,
+  };
+}
+
+export function getStage5LaraArrivalFaceBoxes(crisX: number): Stage5FaceBounds[] {
+  const L = STAGE5_LARA_ARRIVAL_LAYOUT;
+  return [
+    getStage5CharacterFaceBounds('ariel', 'Ariel', L.ariel.x, L.ariel.y, Math.round(49 * 1.6)),
+    getStage5CharacterFaceBounds('grazi', 'Grazi', L.grazi.x, L.grazi.y, Math.round(48 * 1.6)),
+    getStage5CharacterFaceBounds('lara', 'Lara bebê', L.lara.x, L.lara.y, Math.round(20 * 1.6)),
+    getStage5CharacterFaceBounds('cris', 'Cris', crisX, L.cris.y, Math.round(40 * 1.6)),
+  ];
+}
+
+export function findStage5FaceOverlaps(boxes: Stage5FaceBounds[]): Stage5FaceOverlap[] {
+  const overlaps: Stage5FaceOverlap[] = [];
+  for (let i = 0; i < boxes.length; i++) {
+    for (let j = i + 1; j < boxes.length; j++) {
+      const a = boxes[i];
+      const b = boxes[j];
+      if (a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1) {
+        overlaps.push({ a, b });
+      }
+    }
+  }
+  return overlaps;
+}
 // ============================================================================
 // ETAPA 7 · PARQUINHO EM FRENTE À IGREJA (mapa 'parquinho_igreja')
 // O cenário é SOMENTE o fundo pronto s5_parquinho_igreja.jpg (1264x848), esticado
@@ -735,21 +807,28 @@ export const STAGE_5_DIALOGUES: Record<string, DialogueSequence> = {
         id: 's5_lad_1',
         speaker: 'grazi_adult',
         speakerName: 'Grazi',
-        text: 'Vem cá devagarzinho, Cris... olha quem chegou pra nossa família: a tua irmãzinha Lara, toda de rosa no colo da mãe!',
+        text: 'Vem cá devagarzinho, Cris... olha quem chegou pra nossa família: a tua irmãzinha Lara dormindo no bercinho!',
         emotion: 'romantic',
       },
       {
         id: 's5_lad_2',
         speaker: 'cristian',
-        speakerName: 'Cris (7 anos)',
-        text: 'Mãe, pai, ela é tão linda! E olha o cabelinho preto dela todo arrepiado pra cima! Posso dar um abraço bem devagarzinho nela?',
-        emotion: 'happy',
+        speakerName: 'Cris (7 anos · emocionado)',
+        text: 'Mãe, pai, ela é tão pequenininha e linda! Olha o cabelinho preto dela todo arrepiado pra cima... eu vou cuidar muito bem dela!',
+        emotion: 'romantic',
       },
       {
         id: 's5_lad_3',
+        speaker: 'lara_baby',
+        speakerName: 'Lara (bebê · dormindo)',
+        text: 'Zzz... Enroladinha na manta rosa, Lara dorme tranquila no berço enquanto o irmão mais velho admira cada detalhe.',
+        emotion: 'thoughtful',
+      },
+      {
+        id: 's5_lad_4',
         speaker: 'ariel_adult',
         speakerName: 'Ariel',
-        text: 'Pode sim, meu filho. Olha como ela fica calminha sentindo o teu abraço... Bem-vinda pra casa, nossa pequena Lara!',
+        text: 'Olha o carinho no olhar do Cris... Bem-vinda pra casa, nossa pequena Lara!',
         emotion: 'romantic',
       },
     ],

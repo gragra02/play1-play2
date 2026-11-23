@@ -19,6 +19,8 @@ import s4ArielAdultPortrait from '../assets/images/s4_ariel_adult_portrait_17952
 import s4CristianPortrait from '../assets/images/s4_cristian_portrait_1795202451565.jpg';
 import s4GraziAdultPortrait from '../assets/images/s4_grazi_adult_portrait_1795202462554.jpg';
 import s4NaniPortrait from '../assets/images/s4_nani_sprite_1795209660137.jpg';
+import s5CrisEmocionadoPortrait from '../assets/images/s5_cris_emocionado_portrait_1795404675811.jpg';
+import s5LaraBebeDormindoPortrait from '../assets/images/s5_lara_bebe_dormindo_portrait_1795404678908.jpg';
 import type { ResolvedCutscenePortraitKey } from '../game/cutscene';
 import type { CharacterEmotion, SpeakerId } from '../game/types';
 
@@ -57,7 +59,14 @@ export function getCharacterPortraitSrc(
   }
 
   if (speaker === 'cristian') {
+    if (emotion === 'romantic' || emotion === 'blush' || emotion === 'sad') {
+      return s5CrisEmocionadoPortrait;
+    }
     return s4CristianPortrait;
+  }
+
+  if (speaker === 'lara_baby') {
+    return s5LaraBebeDormindoPortrait;
   }
 
   if (speaker === 'nani') {
